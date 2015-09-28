@@ -1,6 +1,20 @@
+//this will recive bluetooth strings
+
+
+//bluetooth tx == arduino 4
+//
+/*
+Bluetooth module -> Arduino
+Grnd -> Grnd
+VCC -> 5v
+Rx -> pin3
+Tx -> pin4
+*/
+
+
 #include <SoftwareSerial.h>
 
-SoftwareSerial bt(4,3);
+SoftwareSerial bt(4,3);//tx rx
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
