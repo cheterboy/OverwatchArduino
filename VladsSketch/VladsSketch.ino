@@ -64,14 +64,15 @@ else if(inputString == "~a\n")
   Serial.print("I am a ing\n"); 
 else if(inputString == "~b\n")
   Serial.print("I am b ing\n");  
+else 
+  Serial.print(inputString);
 inputString ="";
 stringComplete = false;
-  
 }
+
 if(Serial.available())
   bt.write(Serial.read());
 }
-
 
 void serialEvent() {
   while (bt.available()) {
