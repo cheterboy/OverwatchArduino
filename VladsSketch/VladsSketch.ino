@@ -50,20 +50,21 @@ if(stringComplete){
 
 if(inputString == "~forward\n")
   Serial.print("I am going forward");
-else if(inputString == "~reverse\n")
-  Serial.print("I am going in reverse"); 
+  Serial.print("I am going forward\n");
+else if(inputString == "~backward\n")
+  Serial.print("I am going backward\n"); 
 else if(inputString == "~left\n")
-  Serial.print("I am going in left"); 
+  Serial.print("I am going left\n"); 
 else if(inputString == "~right\n")
-  Serial.print("I am going in right"); 
+  Serial.print("I am going right\n"); 
 else if(inputString == "~start\n")
-  Serial.print("I am going in start"); 
+  Serial.print("I am starting\n"); 
 else if(inputString == "~select\n")
-  Serial.print("I am going in select"); 
+  Serial.print("I am selecting\n"); 
 else if(inputString == "~a\n")
-  Serial.print("I am going in a"); 
+  Serial.print("I am a ing\n"); 
 else if(inputString == "~b\n")
-  Serial.print("I am going in b");  
+  Serial.print("I am b ing\n");  
 inputString ="";
 stringComplete = false;
   
