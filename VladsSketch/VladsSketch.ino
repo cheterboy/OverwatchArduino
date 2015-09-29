@@ -49,7 +49,6 @@ if(stringComplete){
 //Serial.print(inputString);
 
 if(inputString == "~forward\n")
-  Serial.print("I am going forward");
   Serial.print("I am going forward\n");
 else if(inputString == "~backward\n")
   Serial.print("I am going backward\n"); 
