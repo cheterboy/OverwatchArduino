@@ -7,7 +7,7 @@
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
 #define sigPin 10  //set PPM signal output pin on the arduino
-#define FowardReverse 2 //set foward and reverse channel
+#define FowardReverse 0 //set foward and reverse channel
 #define LeftRight 1 //set left and right channel
 //////////////////////////////////////////////////////////////////
 
@@ -81,35 +81,24 @@ if(stringComplete){
 Serial.print(inputString); 
 delay(100);
   
-if(inputString == "~forward\n"){
-     //FRValue = increase(FRValue, FowardReverse, 1600); 
-     FRValue = 1600;
-}else if(inputString == "~notforward\n"){
-     FRValue = decrease(FRValue, FowardReverse, 1500);   
-}else if(inputString == "~backward\n"){
-     //FRValue = decrease(FRValue, FowardReverse, 1499);
-     //FRValue = increase(FRValue, FowardReverse, 1500); 
-     //FRValue = decrease(FRValue, FowardReverse, 1400);
-     FRValue = 1400;
-     ppm[FowardReverse] = FRValue;
-     FRValue = 1500; 
-      ppm[FowardReverse] = FRValue;
-     delay(500);
-     FRValue = 1400; 
-      ppm[FowardReverse] = FRValue;
+if(inputString == "~notforward\n"){
+     FRValue = increase(FRValue, FowardReverse, 1600); 
+}else if(inputString == "~forward\n"){
+     FRValue = decrease(FRValue, FowardReverse, 1500);
 }else if(inputString == "~notbackward\n"){
+     FRValue = decrease(FRValue, FowardReverse, 1400); 
+}else if(inputString == "~backward\n"){
      FRValue = increase(FRValue, FowardReverse, 1500); 
-     
-}else if(inputString == "~left\n"){
-     LRValue = decrease(LRValue, LeftRight, 1250);
 }else if(inputString == "~notleft\n"){
+     LRValue = decrease(LRValue, LeftRight, 1250);
+}else if(inputString == "~left\n"){
      LRValue = increase(LRValue, LeftRight, 1500);
-}else if(inputString == "~right\n"){
-     LRValue = increase(LRValue, LeftRight, 1750);
 }else if(inputString == "~notright\n"){
+     LRValue = increase(LRValue, LeftRight, 1750);
+}else if(inputString == "~right\n"){
      LRValue = decrease(LRValue, LeftRight, 1500);
 }else if(inputString == "~start\n"){
-     Serial.print("Starting");
+     //Serial.print("Starting");
      if (LRValue < 1500)
      LRValue = increase(LRValue, LeftRight, 1500); 
      else if (LRValue > 1500)
@@ -119,29 +108,24 @@ if(inputString == "~forward\n"){
       FRValue = increase(FRValue, FowardReverse, 1500); 
      else if (FRValue > 1500)
       FRValue = decrease(FRValue, FowardReverse, 1500); 
-
-
-
-     
+      
 }else if(inputString == "~select\n"){
     Serial.print("Selecting");
 }else if(inputString == "~a\n"){
-      Serial.print("A-ing");
-      FRValue = increase(FRValue, FowardReverse, 2000); 
+     Serial.print("Selecting");
 }else if(inputString == "~b\n"){
   Serial.print("B-ing");
-  FRValue = decrease(FRValue, FowardReverse, 1000); 
 }
-Serial.print(inputString);
+
 
 inputString ="";
 stringComplete = false;
 }
  
-  Serial.println(FRValue);
- ppm[FowardReverse] = FRValue;
- ppm[LeftRight] = LRValue; 
- delay(1);
+
+ ppm[FowardReverse] = FRValue; //map(test0, 0, 1024, 1000, 2000); //value should be between 1000= full reverse, 1500=off, and 2000= full foward
+ ppm[LeftRight] = LRValue; //map(test1, 0, 1024, 1000, 2000); //value should be between 1000= full left, 1500= centered, and 2000= full right(could be inversed will know for sure once installed)
+ 
  serialEvent();
 }
 
@@ -194,22 +178,19 @@ void serialEvent() {
 
 
 int increase(int currentSetting,int channel, int targetSetting ){ 
-  ppm[channel] = currentSetting;
   while (currentSetting < targetSetting){
       ppm[channel] = currentSetting; //map(test0, 0, 1024, 1000, 2000); //value should be between 1000= full reverse, 1500=off, and 2000= full foward
-      currentSetting += 5;
+      currentSetting += 1;
       Serial.println(currentSetting); 
       delay(1);
        }
-   
       return currentSetting;
      }
 
 int decrease(int currentSetting, int channel , int targetSetting){ 
-  ppm[channel] = currentSetting;
   while (currentSetting > targetSetting){
-      ppm[channel] = currentSetting; //map(test0, 0, 1024, 1000, 2000); //value should be between 1000= full reverse, 1500=off, and 2000= full foward
-      currentSetting -= 5;
+      ppm[channel] = currentSetting; 
+      currentSetting -= 1;
       Serial.println(currentSetting); 
       delay(1);
        }

@@ -14,7 +14,7 @@ Tx -> pin4
 
 #include <SoftwareSerial.h>
 
-SoftwareSerial bt(4,3);//tx rx
+SoftwareSerial bt(7,8);//tx rx
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
@@ -26,18 +26,22 @@ void setup() {
   Serial.begin(9600);
 
   bt.begin(9600); 
-  delay(1000);
+  
+  /*delay(3000);
   
   bt.print("AT");
+ // bt.flush();
   delay(1000);
   //Serial.print(bt.read());
-  bt.print("AT+NAMEOverWatch");
+  bt.print("AT+NAMEOverWatchVlad1");
+ // bt.flush();
   delay(1000);
   bt.print("AT+PIN9999");
+ // bt.flush();
   Serial.println("Done");
-
+*/
   inputString.reserve(200);
-bt.flush();
+  //bt.flush();
 
 
 }
@@ -46,7 +50,7 @@ void loop() {
 
 serialEvent();
 if(stringComplete){
-//Serial.print(inputString);
+Serial.println(inputString);
 
 if(inputString == "~forward\n")
   Serial.print("I am going forward\n");
@@ -64,6 +68,36 @@ else if(inputString == "~a\n")
   Serial.print("I am a ing\n"); 
 else if(inputString == "~b\n")
   Serial.print("I am b ing\n");  
+else if(inputString.startsWith("[lat/lng: ("))
+  {
+    
+    //inputString.toInt();//replace("[lat/lng: ()" , "L");
+    //char floatbuf[sizeof("[lat/lng: (37.668156139698645,-97.39461153745651)]")]; 
+    //inputString.toCharArray(floatbuf, sizeof("[lat/lng: (37.668156139698645,-97.39461153745651)]")); 
+    
+    inputString.remove(0 , 11);
+    inputString.remove(17 , 30 );
+
+    Serial.print("The string is ");
+    Serial.println(inputString);
+
+    
+    //double test = atoi(inputString.c_str());
+    //test = atol(floatbuf);
+
+     
+    double x = 0.000000;
+    x= ato(inputString.c_str());
+
+  //char * cstr = new char[sizeof(inputString)+1];
+  
+
+    Serial.print("The formatted string is "); 
+    //Serial.print(inputString.toFloat()); 
+    Serial.print(x); 
+        
+  }
+  
 inputString ="";
 stringComplete = false;
   
