@@ -39,12 +39,12 @@ void loop()
 
 
 //CENTER OF BACK YARD
-double LONDON_LAT= 37.628177, LONDON_LON = -97.413986;
+//double LONDON_LAT= 37.628177, LONDON_LON = -97.413986;
 
 //west coordinate from house 
 //double LONDON_LAT = 37.628103, LONDON_LON = -97.414387;
 
-
+double LONDON_LAT = 37.718346 , LONDON_LON = -97.292445;
 
 
  // printInt(gps.satellites.value(), gps.satellites.isValid(), 5);

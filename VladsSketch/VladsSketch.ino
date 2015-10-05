@@ -68,6 +68,7 @@ else if(inputString == "~a\n")
   Serial.print("I am a ing\n"); 
 else if(inputString == "~b\n")
   Serial.print("I am b ing\n");  
+<<<<<<< HEAD
 else if(inputString.startsWith("[lat/lng: ("))
   {
     
@@ -98,14 +99,17 @@ else if(inputString.startsWith("[lat/lng: ("))
         
   }
   
+=======
+else 
+  Serial.print(inputString);
+>>>>>>> c2b21ea15ca7d3a73c0bf8b575b41c80c6152e6f
 inputString ="";
 stringComplete = false;
-  
 }
+
 if(Serial.available())
   bt.write(Serial.read());
 }
-
 
 void serialEvent() {
   while (bt.available()) {
