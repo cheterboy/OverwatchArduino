@@ -1,5 +1,9 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
+#include <HM55B_Compass.h>
+
+HM55B_Compass compass(8, 9, 10);
+
 /*
    This sample code demonstrates the normal use of a TinyGPS++ (TinyGPSPlus) object.
    It requires the use of SoftwareSerial, and assumes that you have a
@@ -18,7 +22,9 @@ void setup()
 {
   Serial.begin(115200);
   ss.begin(GPSBaud);
+  compass.initialize();
 
+/*
   Serial.println(F("FullExample.ino"));
   Serial.println(F("An extensive example of many interesting TinyGPS++ features"));
   Serial.print(F("Testing TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
@@ -27,50 +33,37 @@ void setup()
   Serial.println(F("Sats HDOP Latitude   Longitude   Fix  Date       Time     Date Alt    Course Speed Card  Distance Course Card  Chars Sentences Checksum"));
   Serial.println(F("          (deg)      (deg)       Age                      Age  (m)    --- from GPS ----  ---- to London  ----  RX    RX        Fail"));
   Serial.println(F("---------------------------------------------------------------------------------------------------------------------------------------"));
+*/
 }
 
 void loop()
 {
-//  static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
 
+  int angle = compass.read();
+  static const double LONDON_LAT = 37.718346, LONDON_LON = -97.292445;
+/*
+  printInt(gps.satellites.value(), gps.satellites.isValid(), 5);
+  printInt(gps.hdop.value(), gps.hdop.isValid(), 5);
+  printFloat(gps.location.lat(), gps.location.isValid(), 11, 6);
+  printFloat(gps.location.lng(), gps.location.isValid(), 12, 6);
+  printInt(gps.location.age(), gps.location.isValid(), 5);
+  printDateTime(gps.date, gps.time);
+  printFloat(gps.altitude.meters(), gps.altitude.isValid(), 7, 2);
+  printFloat(gps.course.deg(), gps.course.isValid(), 7, 2);
+  printFloat(gps.speed.kmph(), gps.speed.isValid(), 6, 2);
+  printStr(gps.course.isValid() ? TinyGPSPlus::cardinal(gps.course.value()) : "*** ", 6);
+*/
 
-//north coordinate from house 
-//double LONDON_LAT= 37.628392, LONDON_LON = -97.414020;
+  printFloat(gps.location.lat(), gps.location.isValid(), 11, 6);
+  printFloat(gps.location.lng(), gps.location.isValid(), 12, 6);
 
-
-//CENTER OF BACK YARD
-//double LONDON_LAT= 37.628177, LONDON_LON = -97.413986;
-
-//west coordinate from house 
-//double LONDON_LAT = 37.628103, LONDON_LON = -97.414387;
-
-double LONDON_LAT = 37.718346 , LONDON_LON = -97.292445;
-
-
- // printInt(gps.satellites.value(), gps.satellites.isValid(), 5);
- // printInt(gps.hdop.value(), gps.hdop.isValid(), 5);
- // printFloat(gps.location.lat(), gps.location.isValid(), 11, 6);
- // printFloat(gps.location.lng(), gps.location.isValid(), 12, 6);
- // printInt(gps.location.age(), gps.location.isValid(), 5);
-  //printDateTime(gps.date, gps.time);
-  //printFloat(gps.altitude.meters(), gps.altitude.isValid(), 7, 2);
-    Serial.print("Course from gps= "); 
-    printFloat(gps.course.deg(), gps.course.isValid(), 7, 2);
- 
-
-  float courseFromGPS = gps.course.deg();
-  //printFloat(gps.speed.kmph(), gps.speed.isValid(), 6, 2);
-  //printStr(gps.course.isValid() ? TinyGPSPlus::cardinal(gps.course.value()) : "*** ", 6);
-
-  unsigned long distanceKmToLondon =
+  unsigned long distancemToLondon =
     (unsigned long)TinyGPSPlus::distanceBetween(
       gps.location.lat(),
       gps.location.lng(),
       LONDON_LAT, 
       LONDON_LON);
-
-      
-  //printInt(distanceKmToLondon, gps.location.isValid(), 9);
+  printInt(distancemToLondon, gps.location.isValid(), 9);
 
   double courseToLondon =
     TinyGPSPlus::courseTo(
@@ -79,23 +72,28 @@ double LONDON_LAT = 37.718346 , LONDON_LON = -97.292445;
       LONDON_LAT, 
       LONDON_LON);
 
-  
-    Serial.print("Course to london "); 
-  printFloat(courseToLondon, gps.location.isValid(), 7, 2);
+  //printFloat(courseToLondon, gps.location.isValid(), 7, 2);
 
-  //const char *cardinalToLondon = TinyGPSPlus::cardinal(courseToLondon);
+  const char *cardinalToLondon = TinyGPSPlus::cardinal(courseToLondon);
 
   //printStr(gps.location.isValid() ? cardinalToLondon : "*** ", 6);
 
+
+
   //printInt(gps.charsProcessed(), true, 6);
-  //printInt(gps.sentencesWithFix(), true, 10);
+ // printInt(gps.sentencesWithFix(), true, 10);
   //printInt(gps.failedChecksum(), true, 9);
+  Serial.println();
+
+
+
+
 
   float newCourse;
-  if (courseToLondon == courseFromGPS)
+  if (courseToLondon == angle)
     Serial.print("Go straight");
   else if (courseToLondon <= 180){//---------------- waypoint is in 2/3 qudrant 
-    newCourse = courseFromGPS - courseToLondon ;
+    newCourse = angle - courseToLondon ;
     if (newCourse < 0)
       newCourse += 360;
     if (newCourse == 180)
@@ -113,7 +111,7 @@ double LONDON_LAT = 37.718346 , LONDON_LON = -97.292445;
         Serial.println(); 
       }}
   else if (courseToLondon > 180){//-----------------------waypoint is in 1/4 qudrant 
-    newCourse = (courseFromGPS + (360 - courseToLondon)); 
+    newCourse = (angle + (360 - courseToLondon)); 
     if (newCourse > 360) 
       newCourse -= 360; 
     if (newCourse == 180)
@@ -130,47 +128,33 @@ double LONDON_LAT = 37.718346 , LONDON_LON = -97.292445;
         Serial.print(360 - newCourse); 
         Serial.println(); 
       }}
-   
- 
 
 
 
 
 
-  /*
-  Serial.print("course to london= ");
-  Serial.print(courseToLondon);
-  Serial.print("   ");
 
-  Serial.print("course from gps= ");
-  Serial.print(courseFromGPS);
-  Serial.print("   ");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
-  Serial.print( courseFromGPS - courseToLondon);
-  if((courseToLondon - courseFromGPS)    ==  0){
-    Serial.print(" Go straght");//go straight 
-
-
-  }  else if( courseToLondon - courseFromGPS   > 180)
-  { 
-    Serial.print(" Go left");//go left
-
-
-  }
-  else if( courseToLondon - courseFromGPS   < 180){
-
-
-    Serial.print(" Go right");//go right 
-  }
-    
-  
-  */
-  
-  
-  
-  Serial.println();
-  
-  smartDelay(500);
+  smartDelay(1000);
 
   if (millis() > 5000 && gps.charsProcessed() < 10)
     Serial.println(F("No GPS data received: check wiring"));

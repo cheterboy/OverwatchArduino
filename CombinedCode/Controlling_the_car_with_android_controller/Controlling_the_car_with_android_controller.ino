@@ -6,7 +6,7 @@
 #define PPM_FrLen 22000  //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
-#define sigPin 10  //set PPM signal output pin on the arduino
+#define sigPin 3  //set PPM signal output pin on the arduino
 #define FowardReverse 2 //set foward and reverse channel
 #define LeftRight 1 //set left and right channel
 //////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ void setup(){
   //initiallize default ppm values
   for(int i=0; i<chanel_number; i++){
     ppm[i]= default_servo_value;
-
+  }
     // put your setup code here, to run once:
   Serial.begin(9600);
   delay(1000);
@@ -54,7 +54,7 @@ void setup(){
 
 
     
-  }
+
 
   pinMode(sigPin, OUTPUT);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
