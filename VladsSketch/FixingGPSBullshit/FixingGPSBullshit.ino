@@ -29,7 +29,7 @@ struct waypoint {
 
 //GPS
 //////////////////////////////////////////
-static const int RXPin = 2, TXPin = 4;
+static const int RXPin = 5, TXPin = 4;
 static const uint32_t GPSBaud = 9600;
 //////////////////////////////////////
 
@@ -116,7 +116,7 @@ void setup()
   sei();
  
   //Serial.begin(115200);
-  ssGPS.begin(GPSBaud);
+  ssGPS.begin(9600);
   while(!ssGPS); 
   bt.begin(1200);
   while(!bt); 
@@ -298,7 +298,7 @@ void getGPSData()
 {
 
   
-  smartDelay(8);
+  smartDelay(1000);
 
   waypoint.distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
@@ -406,12 +406,12 @@ static void smartDelay(unsigned long ms)
 {
 
   ssGPS.listen();
-  delay(1);
+  //delay(1);
   unsigned long start = millis();
   do 
   {
    
-    while ((ssGPS.available()) && (millis() - start < ms))
+    while ((ssGPS.available()) )
       gps.encode(ssGPS.read());
   } while (millis() - start < ms);
 
