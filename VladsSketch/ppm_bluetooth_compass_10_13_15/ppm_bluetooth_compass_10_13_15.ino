@@ -65,8 +65,8 @@ boolean stringComplete = false;  // whether the string is complete
 #define hardRight 1900
 */
 #define straight 1500
-#define slightLeft 1750
-#define slightRight 1250
+#define slightLeft 1900
+#define slightRight 1100
 #define hardLeft 1900
 #define hardRight 1100
 
@@ -116,7 +116,7 @@ void setup()
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
  
-  //Serial.begin(115200);
+ // Serial.begin(115200);
   //ssGPS.begin(GPSBaud);
   //while(!ssGPS); 
   bt.begin(1200);
@@ -139,7 +139,7 @@ bool test = false;
 
 
 //Daryl House Staight ahead
-waypoint waypoint  = { 37.6960168311, -97.423266917 , 0 , 0 ,0};
+waypoint waypoint  = { 37.695730, -97.423314 , 0 , 0 ,0};
 
 void loop()
 {
@@ -216,8 +216,6 @@ void bluetooth()
 {
   serialEvent();
     if(stringComplete){
-  //Serial.print(inputString); 
-//delay(100);
   
 if(inputString == "~forward\n"){
      FRValue = slowForward;
@@ -279,7 +277,7 @@ stringComplete = false;
 void serialEvent() {
   
 
-  if(bt.isListening())
+  //if(bt.isListening())
   while (bt.available()) {
     // get the new byte:
     char inChar = (char)bt.read();
@@ -298,7 +296,7 @@ void getGPSData()
 {
 
   
-  smartDelay(100);
+  smartDelay(1000);
 
   waypoint.distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
@@ -409,7 +407,6 @@ static void smartDelay(unsigned long ms)
   do 
   {
     Wire.requestFrom(8, 1);
-   
     while ((Wire.available()))
       gps.encode(Wire.read());
   } while (millis() - start < ms);
