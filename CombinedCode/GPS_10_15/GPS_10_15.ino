@@ -19,7 +19,7 @@ SoftwareSerial mySerial(2, 4); // RX, TX
 
 void setup()
 {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   Wire.begin(8);                // join i2c bus with address #8
   Wire.onRequest(requestEvent); // register event
   mySerial.begin(9600);

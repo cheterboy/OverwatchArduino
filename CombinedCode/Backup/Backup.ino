@@ -20,8 +20,8 @@
 #define hardLeft 1100
 #define hardRight 1900
 */
-#define straight 1450
-#define slightLeft 1650
+#define straight 1530
+#define slightLeft 1750
 #define slightRight 1350
 #define hardLeft 1900
 #define hardRight 1100
@@ -42,7 +42,7 @@ int LRValue = 1500;
 
 
 
-#define COMPASSTOLERANCE 10
+#define COMPASSTOLERANCE 20
 
 
 typedef struct waypoint {
@@ -98,7 +98,7 @@ void setup()
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
  
-  Serial.begin(115200);
+   Serial.begin(115200);
    
   //ssGPS.begin(GPSBaud);
   //while(!ssGPS); 
@@ -132,8 +132,9 @@ int routeCounter = 0;
 void loop()
 {
   
-  smartDelay(100);
-  
+ 
+   
+
   if(followingGPS)
   {
       getGPSData();
@@ -154,9 +155,7 @@ void loop()
   //Serial.print(FRValue); 
   //Serial.print(" LRValue = "); 
   //Serial.print(LRValue);
-
-   //Serial.println(waypointCounter); 
-   
+  
   
   /*
   Serial.print(waypoint[routeCounter].latitude);
@@ -164,26 +163,10 @@ void loop()
    Serial.println(waypoint[routeCounter].longitude);
 */
 
-  Serial.print(routeCounter);
-  Serial.print("     "); 
-  Serial.print(waypointCounter);
-  Serial.print("     Going to "); 
-  Serial.print(waypoint[routeCounter].latitude); 
-  Serial.print("   "); 
-  Serial.print(waypoint[routeCounter].longitude); 
-  Serial.print("    Current loc ");
-  Serial.print(gps.location.lat(),6);
-  Serial.print("   ");
-  Serial.print(gps.location.lng(),6); 
-  Serial.print("   Distance ");   
-  Serial.println(TinyGPSPlus::distanceBetween(
-      gps.location.lat(),gps.location.lng(),
-      waypoint[routeCounter].latitude, 
-      waypoint[routeCounter].longitude));
-
-  Serial.println(waypoint[routeCounter].distance); 
+  //Serial.print(routeCounter);
+  //Serial.print("     "); 
+  //Serial.println(numberOfCoordinatesInBuffer);
   
-
    
   //Serial.println(counter++);
 
@@ -264,14 +247,13 @@ if(inputString == "~forward\n"){
       followingGPS = true;
       
 }else if(inputString == "~a\n"){
-     /*while(FRValue < 2000) 
+     while(FRValue < 2000) 
      {
         ppm[FowardReverse] = FRValue;
         ppm[LeftRight] = LRValue;
         FRValue++;
         //Serial.println(FRValue);  
-     }*/
-     routeCounter++;
+     }
  
 }else if(inputString == "~b\n"){
      while(FRValue > 1000) 
@@ -347,7 +329,6 @@ if(inputString == "~forward\n"){
 
       */
       waypointCounter++; 
-      Serial.println(waypointCounter);
       if (waypointCounter > 10)
         waypointCounter =0; 
   
@@ -397,7 +378,7 @@ void getGPSData()
       gps.location.lng(),
       waypoint[routeCounter].latitude, 
       waypoint[routeCounter].longitude);
-  //Serial.print(waypoint[routeCounter].distance);
+   Serial.print(waypoint[routeCounter].distance);
   //printInt(distance, gps.location.isValid(), 9);
 
   waypoint[routeCounter].courseToWaypoint =
@@ -407,8 +388,8 @@ void getGPSData()
       waypoint[routeCounter].latitude, 
       waypoint[routeCounter].longitude);
 
-  //if (millis() > 5000 && gps.charsProcessed() < 10)
-    //Serial.println(F("No GPS data received: check wiring"));
+  if (millis() > 5000 && gps.charsProcessed() < 10)
+    Serial.println(F("No GPS data received: check wiring"));
 
 }
 
@@ -424,13 +405,13 @@ void wichWay()
   angle = 360+angle; 
 
   //angle += 180; 
-  /*
+  
   Serial.print("  Compas = "); 
   Serial.print(angle); 
   Serial.print("   Going to = "); 
   Serial.println(waypoint[routeCounter].courseToWaypoint); 
   Serial.print("      ");
-*/
+
   
   float newCourse;
   if ((waypoint[routeCounter].courseToWaypoint <= angle + COMPASSTOLERANCE) && 
@@ -475,28 +456,30 @@ void wichWay()
         //Serial.println(); 
         LRValue = slightRight;
       }}
-/*
+
     Serial.print("   ");
     Serial.print(waypoint[routeCounter].distance);
     Serial.print("   ");
-*/    
-    if (waypoint[routeCounter].distance > 10){    //tells the car to go forwards fast as long as the car is at least 10 meters away from the way point
-       FRValue = fastForward;
-    }else if ((waypoint[routeCounter].distance <= 10 ) && (waypoint[routeCounter].distance  > 2)){    // slows the car down as it approaches the way point
-        FRValue = slowForward;
-    }else if(waypoint[routeCounter].distance <= 2){    // once within 2 meters of way point it increases the counter for the next point if its the last point it ends the trip
+    
+    //distance
+    //Serial.print(waypoint.distance);
+    if (waypoint[routeCounter].distance > 20){
+    FRValue = fastForward; 
+    //else if(waypoint[routeCounter].distance < 20) 
+    //FRValue = slowForward;
+    }else if(waypoint[routeCounter].distance < 2){
       routeCounter++; 
-      if (routeCounter >= waypointCounter){
+      if (routeCounter > waypointCounter){
         FRValue = neutral; 
         LRValue = straight;
-        followingGPS = false;
+        followingGPS = false; 
       }
-      
+
     }else {
-      FRValue = neutral;    //idk if we actually need this i think its here for a safety if the program freaks out
+    FRValue = neutral; 
     } 
  
-   
+    //return;
     
       
 }
