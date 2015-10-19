@@ -20,7 +20,12 @@
 #define hardLeft 1100
 #define hardRight 1900
 */
+
+
 #define straight 1450
+
+
+//#define straight 1500
 #define slightLeft 1650
 #define slightRight 1350
 #define hardLeft 1900
@@ -112,7 +117,7 @@ void setup()
   
   //getGPSData();
   inputString.reserve(200);
-  Serial.println("Done"); 
+  //Serial.println("Done"); 
   
 }
 
@@ -132,7 +137,7 @@ int routeCounter = 0;
 void loop()
 {
   
-  smartDelay(100);
+ 
   
   if(followingGPS)
   {
@@ -162,7 +167,7 @@ void loop()
   Serial.print(waypoint[routeCounter].latitude);
   Serial.print("     "); 
    Serial.println(waypoint[routeCounter].longitude);
-*/
+
 
   Serial.print(routeCounter);
   Serial.print("     "); 
@@ -183,7 +188,7 @@ void loop()
 
   Serial.println(waypoint[routeCounter].distance); 
   
-
+*/
    
   //Serial.println(counter++);
 
@@ -234,7 +239,7 @@ void bluetooth()
 {
   serialEvent();
     if(stringComplete){
-  
+ Serial.println(inputString);  
 if(inputString == "~forward\n"){
      FRValue = slowForward;
 }else if(inputString == "~notforward\n"){
@@ -257,6 +262,11 @@ if(inputString == "~forward\n"){
      FRValue = neutral;
      routeCounter = 0; 
      waypointCounter = 0; 
+     Serial.println("Here"); 
+     String currentCoordinate = (char)gps.location.lat() + (char)gps.location.lng() + "\n"; 
+    // if(bt.available())
+     bt.print("Hello"); 
+     
       
      
 }else if(inputString == "~select\n"){
@@ -347,7 +357,7 @@ if(inputString == "~forward\n"){
 
       */
       waypointCounter++; 
-      Serial.println(waypointCounter);
+  //    Serial.println(waypointCounter);
       if (waypointCounter > 10)
         waypointCounter =0; 
   
@@ -389,7 +399,7 @@ void getGPSData()
 {
 
   
-  smartDelay(300);
+  smartDelay(200);
 
   waypoint[routeCounter].distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
@@ -492,9 +502,11 @@ void wichWay()
         followingGPS = false;
       }
       
-    }else {
-      FRValue = neutral;    //idk if we actually need this i think its here for a safety if the program freaks out
-    } 
+    }
+    
+    //else {
+     // FRValue = neutral;    //idk if we actually need this i think its here for a safety if the program freaks out
+    //} 
  
    
     
@@ -507,7 +519,6 @@ void wichWay()
 // is being "fed".
 static void smartDelay(unsigned long ms)
 {
-
   unsigned long start = millis();
   do 
   {
