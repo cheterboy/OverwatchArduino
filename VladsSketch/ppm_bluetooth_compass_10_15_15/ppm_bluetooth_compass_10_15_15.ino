@@ -61,7 +61,7 @@ typedef struct waypoint {
 
 //GPS
 //////////////////////////////////////////
-static const int RXPin = 2, TXPin = 4;
+static const int RXPin = 4, TXPin = 2;
 static const uint32_t GPSBaud = 9600;
 //////////////////////////////////////
 
@@ -69,7 +69,7 @@ static const uint32_t GPSBaud = 9600;
 
 // The TinyGPS++ object
 TinyGPSPlus gps;
-//SoftwareSerial ssGPS(RXPin, TXPin);
+SoftwareSerial ssGPS(RXPin, TXPin);
 SoftwareSerial bt(6,7);//tx rx
 HM55B_Compass compass(8, 9, 10);
 
@@ -137,7 +137,7 @@ int routeCounter = 0;
 void loop()
 {
   
- 
+
   
   if(followingGPS)
   {
@@ -257,21 +257,33 @@ if(inputString == "~forward\n"){
 }else if(inputString == "~notright\n"){
      LRValue = straight;
 }else if(inputString == "~start\n"){
+
+     LRValue = straight; 
+     FRValue = neutral;
+     
+
+}else if(inputString == "~startroute\n"){
+
+    routeCounter = 0;
+      followingGPS = true;
+
+}else if(inputString == "~stoproute\n"){
      followingGPS = false;
      LRValue = straight; 
      FRValue = neutral;
      routeCounter = 0; 
      waypointCounter = 0; 
-     Serial.println("Here"); 
-     String currentCoordinate = (char)gps.location.lat() + (char)gps.location.lng() + "\n"; 
-    // if(bt.available())
-     bt.print("Hello"); 
-     
-      
+
+}else if(inputString == "~uadlocation\n"){
+
+     smartDelay(1000);
+     bt.print(gps.location.lat(),6); 
+     bt.print(",");
+     bt.print(gps.location.lng(),6); 
+     bt.print("\n"); 
      
 }else if(inputString == "~select\n"){
-      routeCounter = 0;
-      followingGPS = true;
+
       
 }else if(inputString == "~a\n"){
      /*while(FRValue < 2000) 
@@ -528,4 +540,20 @@ static void smartDelay(unsigned long ms)
   } while (millis() - start < ms);
 
 }
+
+
+/*
+
+// This custom version of delay() ensures that the gps object
+// is being "fed".
+static void smartDelay(unsigned long ms)
+{
+  unsigned long start = millis();
+  do 
+  {
+    while (ssGPS.available())
+      gps.encode(ssGPS.read());
+  } while (millis() - start < ms);
+}
+*/
 
