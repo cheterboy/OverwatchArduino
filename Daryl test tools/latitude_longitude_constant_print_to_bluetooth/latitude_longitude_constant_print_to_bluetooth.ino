@@ -57,7 +57,11 @@ void loop() // run over and over
     Serial.print(latitude,6); 
     Serial.print(","); 
     Serial.println(longitude,6); 
-    
+    mySerial.print(latitude,6); 
+    mySerial.print(","); 
+    mySerial.print(longitude,6);     
+    mySerial.print("\n"); 
+
 
    latitude += 1.111111; 
    longitude -= 1.111111; 
