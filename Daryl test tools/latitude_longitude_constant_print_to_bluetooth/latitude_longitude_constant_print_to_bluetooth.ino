@@ -66,7 +66,7 @@ void loop() // run over and over
    latitude += 1.111111; 
    longitude -= 1.111111; 
    
-   if (latitude > 300 )
+   if (latitude > 40 )
     {  latitude = 0;
       longitude = 0;  
     }
