@@ -1,7 +1,10 @@
-#include <TinyGPS++.h>
+ #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 #include <HM55B_Compass.h>
 #include <Wire.h>
+//#include <stdlib.h> 
+ 
+
 
 //          PPM
 ///////////////////////////////////////////////////
@@ -20,7 +23,7 @@
 #define hardLeft 1100
 #define hardRight 1900
 */
-
+#define MAXWAYPOINTS 15
 
 #define straight 1450
 
@@ -51,8 +54,8 @@ int LRValue = 1500;
 
 
 typedef struct waypoint {
-  double latitude; 
-  double longitude;
+  double latitude =0.0000000; 
+  double longitude =0.0000000;
   float courseToWaypoint; 
   float distance; 
   int estimatedArrivalTime;  
@@ -118,11 +121,13 @@ void setup()
   //getGPSData();
   inputString.reserve(200);
   //Serial.println("Done"); 
+
+  smartDelay(3000);
   
 }
 
 bool followingGPS = false;
-waypoint waypoint[15];
+waypoint waypoint[MAXWAYPOINTS];
 int waypointCounter = 0;
 int routeCounter = 0;  
 
@@ -263,9 +268,20 @@ if(inputString == "~forward\n"){
      
 
 }else if(inputString == "~startroute\n"){
+    int test = 0; 
 
+    while (test < waypointCounter)
+    {
+     //Serial.print(test); 
+     Serial.print(waypoint[test].latitude,6); 
+     Serial.print(","); 
+     Serial.println(waypoint[test].longitude,6); 
+     test++; 
+    }
+    
+    
     routeCounter = 0;
-      followingGPS = true;
+    followingGPS = true;
 
 }else if(inputString == "~stoproute\n"){
      followingGPS = false;
@@ -273,14 +289,27 @@ if(inputString == "~forward\n"){
      FRValue = neutral;
      routeCounter = 0; 
      waypointCounter = 0; 
+      clearWaypointData();
 
 }else if(inputString == "~uadlocation\n"){
+    smartDelay(1000);
+    float x = gps.location.lat();
+    float y = gps.location.lng(); 
+    
 
-     smartDelay(1000);
-     bt.print(gps.location.lat(),6); 
+      
+    
+     bt.print(x,6); 
      bt.print(",");
-     bt.print(gps.location.lng(),6); 
+     bt.print(y,6); 
      bt.print("\n"); 
+//bt.print("Hello"); 
+
+/*
+     Serial.print(x,6); 
+     Serial.print(","); 
+     Serial.println(y,6); 
+  */   
      
 }else if(inputString == "~select\n"){
 
@@ -335,8 +364,9 @@ if(inputString == "~forward\n"){
       latitude.remove(two-2);
       longitude.remove(0,two+1); 
 
-      
-
+     
+////////////////////////////////////////////////////////////////////////////////////
+/*
       //this is used for strtod function
       char *ptr;
       //delay(20);
@@ -345,6 +375,16 @@ if(inputString == "~forward\n"){
       //delay(10);
       waypoint[waypointCounter].longitude = strtod(longitude.c_str(),&ptr);
       //delay(20);
+*/
+/////////////////////////////////////////////////////////////////////////    
+
+
+
+     
+      waypoint[waypointCounter].latitude = (double)strtod(latitude.c_str(),NULL);
+      delay(10);
+      waypoint[waypointCounter].longitude = (double)strtod(longitude.c_str(),NULL);
+
    
     /*
       Serial.print("waypointNumber String = "); 
@@ -435,6 +475,21 @@ void getGPSData()
 }
 
 
+void clearWaypointData()
+{
+     int counter =0; 
+     while (counter < MAXWAYPOINTS)
+     {
+        waypoint[counter].latitude = 0; 
+        waypoint[counter].longitude =0; 
+        waypoint[counter].courseToWaypoint = 0; 
+        waypoint[counter].distance =0; 
+        waypoint[counter].estimatedArrivalTime = 0; 
+     }
+
+  
+}
+
   
 
 void wichWay()
@@ -512,6 +567,7 @@ void wichWay()
         FRValue = neutral; 
         LRValue = straight;
         followingGPS = false;
+        clearWaypointData();
       }
       
     }
