@@ -1,9 +1,31 @@
- #include <TinyGPS++.h>
+//GPS
+#include <TinyGPS++.h>
 #include <SoftwareSerial.h>
-#include <HM55B_Compass.h>
+
+
+//#include <HM55B_Compass.h>
+//compass
+#include <HMC5883L.h>
+#define COMPASSTOLERANCE 5
+
+
 #include <Wire.h>
-//#include <stdlib.h> 
- 
+
+//NRF
+/////////////////////////////////////////////////////////////
+//nrf libraries 
+#include <RH_NRF24.h>
+#include <SPI.h>
+
+
+//nrf 
+#define CLIENT_ADDRESS 1
+#define SERVER_ADDRESS 2
+
+// Singleton instance of the radio driver
+RH_NRF24 nrf24;
+
+
 
 
 //          PPM
@@ -23,8 +45,10 @@
 #define hardLeft 1100
 #define hardRight 1900
 */
-#define MAXWAYPOINTS 15
+#define MAXWAYPOINTS 10
 
+
+//tylers car 
 #define straight 1450
 
 
@@ -41,41 +65,46 @@
 #define slowBackward 1350
 #define fastBackward  1350
 
-
-int ppm[chanel_number];
 //PPM
+int ppm[chanel_number];
 int FRValue = 1500;
 int LRValue = 1500;
 ///////////////////////////////////////////////////////
 
 
 
-#define COMPASSTOLERANCE 10
 
 
 typedef struct waypoint {
-  double latitude =0.0000000; 
-  double longitude =0.0000000;
+  float latitude = 0.0000000; 
+  float longitude = 0.0000000;
   float courseToWaypoint; 
   float distance; 
-  int estimatedArrivalTime;  
+  //int estimatedArrivalTime;  
  };
 
 
 //GPS
 //////////////////////////////////////////
-static const int RXPin = 4, TXPin = 2;
-static const uint32_t GPSBaud = 9600;
+//static const int RXPin = 4, TXPin = 2;
+//static const uint32_t GPSBaud = 9600;
 //////////////////////////////////////
-
-
 
 // The TinyGPS++ object
 TinyGPSPlus gps;
-SoftwareSerial ssGPS(RXPin, TXPin);
-SoftwareSerial bt(6,7);//tx rx
-HM55B_Compass compass(8, 9, 10);
+SoftwareSerial ssGPS(5, 4);
 
+
+//bluetooth
+//SoftwareSerial bt(6,7);//tx rx
+
+
+
+
+
+//HM55B_Compass compass(8, 9, 10);
+HMC5883L compass;
+int error =0; 
 
 //BlueTooth
 String inputString = "";         // a string to hold incoming data
@@ -87,6 +116,8 @@ boolean stringComplete = false;  // whether the string is complete
 
 void setup()
 {
+
+  Serial.begin(250000);
   Wire.begin();
     
   for(int i=0; i<chanel_number; i++){
@@ -95,6 +126,20 @@ void setup()
 
   pinMode(sigPin, OUTPUT);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
+
+ compass = HMC5883L(); // Construct a new HMC5883 compass.
+
+  //Serial.println("Setting scale to +/- 1.3 Ga");
+  error = compass.SetScale(1.3); // Set the scale of the compass.
+  if(error != 0) // If there is an error, print it out.
+    //Serial.println(compass.GetErrorText(error));
+
+  //Serial.println("Setting measurement mode to continous.");
+  error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
+  if(error != 0) // If there is an error, print it out.
+    //Serial.println(compass.GetErrorText(error));
+
+
   
   cli();
   TCCR1A = 0; // set entire TCCR1 register to 0
@@ -106,100 +151,84 @@ void setup()
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
  
-  Serial.begin(115200);
+  
    
-  //ssGPS.begin(GPSBaud);
+  ssGPS.begin(9600);
   //while(!ssGPS); 
-  bt.begin(1200);
+  //bt.begin(1200);
   //while(!bt); 
 
 
-  compass.initialize();//start compass
+  //compass.initialize();//start compass
   //delay(100); 
 
   
   //getGPSData();
-  inputString.reserve(200);
+  //inputString.reserve(200);
   //Serial.println("Done"); 
 
-  smartDelay(3000);
+  //smartDelay(3000);
   
+
+ 
+  if (!nrf24.init())
+	  Serial.println("init failed");
+  else
+    Serial.println("init OK");
+
+
+  nrf24.setRF(RH_NRF24::DataRate2Mbps, RH_NRF24::TransmitPower0dBm);
+  
+  
+
+
 }
 
+
+
+//The response message
+uint8_t data[] =  "1" ;
+
+// Dont put this on the stack:
+uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
+
+
+//String inputString;
+//bool stringComplete;
+
+
+
+
+//used to controll gps mode
 bool followingGPS = false;
-waypoint waypoint[MAXWAYPOINTS];
+waypoint Waypoint[MAXWAYPOINTS];
+//number of waypoints in buffer
 int waypointCounter = 0;
+//the waypoint that the uad is on
 int routeCounter = 0;  
 
-//bool test = false;
 
 
-//Daryl House Staight ahead
-//waypoint waypoint  = { 37.695730, -97.423314 , 0 , 0 ,0};
 
 
 
 void loop()
 {
   
+  //Serial.println("here"); 
+
+
 
   
   if(followingGPS)
   {
       getGPSData();
       wichWay();
-      bluetooth();
-  }else
-    bluetooth();
-  
-  /*
-  Serial.print(LRValue); 
-  Serial.print("   "); 
-  Serial.println(FRValue); 
-  */
+	  //nrf 
+	  nrf(); 
+  }  else
+	  nrf();
 
-
-
-  //Serial.print("FRValue = "); 
-  //Serial.print(FRValue); 
-  //Serial.print(" LRValue = "); 
-  //Serial.print(LRValue);
-
-   //Serial.println(waypointCounter); 
-   
-  
-  /*
-  Serial.print(waypoint[routeCounter].latitude);
-  Serial.print("     "); 
-   Serial.println(waypoint[routeCounter].longitude);
-
-
-  Serial.print(routeCounter);
-  Serial.print("     "); 
-  Serial.print(waypointCounter);
-  Serial.print("     Going to "); 
-  Serial.print(waypoint[routeCounter].latitude); 
-  Serial.print("   "); 
-  Serial.print(waypoint[routeCounter].longitude); 
-  Serial.print("    Current loc ");
-  Serial.print(gps.location.lat(),6);
-  Serial.print("   ");
-  Serial.print(gps.location.lng(),6); 
-  Serial.print("   Distance ");   
-  Serial.println(TinyGPSPlus::distanceBetween(
-      gps.location.lat(),gps.location.lng(),
-      waypoint[routeCounter].latitude, 
-      waypoint[routeCounter].longitude));
-
-  Serial.println(waypoint[routeCounter].distance); 
-  
-*/
-   
-  //Serial.println(counter++);
-
-
- // if (counter > 100 )
-   // counter =0;
    
   ppm[FowardReverse] = FRValue;
   ppm[LeftRight] = LRValue;
@@ -240,9 +269,38 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
 }
 
 
+
+void nrf()
+{
+	uint8_t len = sizeof(buf);
+	nrf24.recv(buf, &len);
+    if(nrf24.available())
+    {
+    
+      nrf24.recv(buf, &len);
+	 
+
+     
+      Serial.print((char*)buf);
+        //inputString = (char*)buf;
+      
+    }
+
+
+
+
+
+
+}
+
+/*
 void bluetooth()
 {
   serialEvent();
+
+  Serial.println(stringComplete);
+
+
     if(stringComplete){
  Serial.println(inputString);  
 if(inputString == "~forward\n"){
@@ -268,18 +326,7 @@ if(inputString == "~forward\n"){
      
 
 }else if(inputString == "~startroute\n"){
-    int test = 0; 
 
-    while (test < waypointCounter)
-    {
-     //Serial.print(test); 
-     Serial.print(waypoint[test].latitude,6); 
-     Serial.print(","); 
-     Serial.println(waypoint[test].longitude,6); 
-     test++; 
-    }
-    
-    
     routeCounter = 0;
     followingGPS = true;
 
@@ -289,41 +336,27 @@ if(inputString == "~forward\n"){
      FRValue = neutral;
      routeCounter = 0; 
      waypointCounter = 0; 
-      clearWaypointData();
+     //clearWaypointData();
+
+     
 
 }else if(inputString == "~uadlocation\n"){
     smartDelay(1000);
     float x = gps.location.lat();
     float y = gps.location.lng(); 
-    
-
-      
-    
      bt.print(x,6); 
      bt.print(",");
      bt.print(y,6); 
      bt.print("\n"); 
 //bt.print("Hello"); 
 
-/*
-     Serial.print(x,6); 
-     Serial.print(","); 
-     Serial.println(y,6); 
-  */   
+ 
      
 }else if(inputString == "~select\n"){
 
       
 }else if(inputString == "~a\n"){
-     /*while(FRValue < 2000) 
-     {
-        ppm[FowardReverse] = FRValue;
-        ppm[LeftRight] = LRValue;
-        FRValue++;
-        //Serial.println(FRValue);  
-     }*/
-     routeCounter++;
- 
+
 }else if(inputString == "~b\n"){
      while(FRValue > 1000) 
      {
@@ -336,15 +369,7 @@ if(inputString == "~forward\n"){
 }else if (isdigit(inputString[0])){
 
 
-/*
-      //store the coordinate in an array 
-      coordinateBuffer[numberOfCoordinatesInBuffer] = inputString; 
-      Serial.print("Number of Coordinates in buffer = "); 
-      Serial.print(numberOfCoordinatesInBuffer);
-      Serial.print("    "); 
-      Serial.println(coordinateBuffer[numberOfCoordinatesInBuffer]);
-      numberOfCoordinatesInBuffer++; 
-*/
+
 
 
       String waypointNumber = inputString; 
@@ -365,49 +390,15 @@ if(inputString == "~forward\n"){
       longitude.remove(0,two+1); 
 
      
-////////////////////////////////////////////////////////////////////////////////////
-/*
-      //this is used for strtod function
-      char *ptr;
-      //delay(20);
-      //waypoint[counter].latitude = strtod(waypointNumber.c_str(),&ptr);
-      waypoint[waypointCounter].latitude = strtod(latitude.c_str(),&ptr);
-      //delay(10);
-      waypoint[waypointCounter].longitude = strtod(longitude.c_str(),&ptr);
-      //delay(20);
-*/
-/////////////////////////////////////////////////////////////////////////    
 
 
 
      
-      waypoint[waypointCounter].latitude = (double)strtod(latitude.c_str(),NULL);
+      Waypoint[waypointCounter].latitude = (double)strtod(latitude.c_str(),NULL);
       delay(10);
-      waypoint[waypointCounter].longitude = (double)strtod(longitude.c_str(),NULL);
+      Waypoint[waypointCounter].longitude = (double)strtod(longitude.c_str(),NULL);
 
-   
-    /*
-      Serial.print("waypointNumber String = "); 
-      Serial.print(waypointNumber); 
-      Serial.print("  waypointNumber = "); 
-      Serial.println(waypointCounter); 
-
-
-      Serial.print("latitude String = "); 
-      Serial.print(latitude); 
-      Serial.print("  latitude = "); 
-      Serial.println(waypoint[waypointCounter].latitude,6); 
-
-
-      Serial.print("longitude String = "); 
-      Serial.print(longitude); 
-      Serial.print("  longitude = ");
-      Serial.println(waypoint[waypointCounter].longitude,6); 
-      
-      Serial.println(); 
-      Serial.println(); 
-
-      */
+  
       waypointCounter++; 
   //    Serial.println(waypointCounter);
       if (waypointCounter > 10)
@@ -424,18 +415,26 @@ inputString ="";
 stringComplete = false;
 }
 
-}
+}*/
   
 
 
-
+/*
 void serialEvent() {
   
+  bt.listen();
+  
+  //Serial.println(bt.isListening());
 
+ 
   //if(bt.isListening())
+  
   while (bt.available()) {
     // get the new byte:
     char inChar = (char)bt.read();
+
+  Serial.println(inChar);
+
     // add it to the inputString:
     inputString += inChar;
     // if the incoming character is a newline, set a flag
@@ -444,7 +443,8 @@ void serialEvent() {
       stringComplete = true;
     }
   }
-}
+  bt.stopListening();
+}*/
 
 
 void getGPSData()
@@ -453,21 +453,21 @@ void getGPSData()
   
   smartDelay(200);
 
-  waypoint[routeCounter].distance =
+  Waypoint[routeCounter].distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
       gps.location.lat(),
       gps.location.lng(),
-      waypoint[routeCounter].latitude, 
-      waypoint[routeCounter].longitude);
+      Waypoint[routeCounter].latitude, 
+      Waypoint[routeCounter].longitude);
   //Serial.print(waypoint[routeCounter].distance);
   //printInt(distance, gps.location.isValid(), 9);
 
-  waypoint[routeCounter].courseToWaypoint =
+  Waypoint[routeCounter].courseToWaypoint =
     TinyGPSPlus::courseTo(
       gps.location.lat(),
       gps.location.lng(),
-      waypoint[routeCounter].latitude, 
-      waypoint[routeCounter].longitude);
+      Waypoint[routeCounter].latitude, 
+      Waypoint[routeCounter].longitude);
 
   //if (millis() > 5000 && gps.charsProcessed() < 10)
     //Serial.println(F("No GPS data received: check wiring"));
@@ -480,11 +480,11 @@ void clearWaypointData()
      int counter =0; 
      while (counter < MAXWAYPOINTS)
      {
-        waypoint[counter].latitude = 0; 
-        waypoint[counter].longitude =0; 
-        waypoint[counter].courseToWaypoint = 0; 
-        waypoint[counter].distance =0; 
-        waypoint[counter].estimatedArrivalTime = 0; 
+        Waypoint[counter].latitude = 0; 
+        Waypoint[counter].longitude =0; 
+        Waypoint[counter].courseToWaypoint = 0; 
+        Waypoint[counter].distance =0; 
+        //Waypoint[counter].estimatedArrivalTime = 0; 
      }
 
   
@@ -494,12 +494,39 @@ void clearWaypointData()
 
 void wichWay()
 {
+
+   MagnetometerRaw raw = compass.ReadRawAxis();
+   MagnetometerScaled scaled = compass.ReadScaledAxis();
+   int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
+   float heading = atan2(scaled.YAxis, scaled.XAxis);
+
+   float declinationAngle = 0.0346;
+   heading += declinationAngle;
   
-  int angle = compass.read();
+  
+  
+  // Correct for when signs are reversed.
+  if(heading < 0)
+    heading += 2*PI;
+    
+  // Check for wrap due to addition of declination.
+  if(heading > 2*PI)
+    heading -= 2*PI;
+   
+  // Convert radians to degrees for readability.
+  int angle = heading * 180/M_PI; 
+  
+  
+  
+  
+  //int angle = compass.read();
 
-  if (angle < 0) 
-  angle = 360+angle; 
 
+
+
+
+
+ 
   //angle += 180; 
   /*
   Serial.print("  Compas = "); 
@@ -510,13 +537,13 @@ void wichWay()
 */
   
   float newCourse;
-  if ((waypoint[routeCounter].courseToWaypoint <= angle + COMPASSTOLERANCE) && 
-  (waypoint[routeCounter].courseToWaypoint >= angle - COMPASSTOLERANCE)){
+  if ((Waypoint[routeCounter].courseToWaypoint <= angle + COMPASSTOLERANCE) && 
+  (Waypoint[routeCounter].courseToWaypoint >= angle - COMPASSTOLERANCE)){
   //  Serial.print("Go straight");
     LRValue = straight;//go straight
   }
-  else if (waypoint[routeCounter].courseToWaypoint <= 180){//---------------- waypoint is in 2/3 qudrant 
-    newCourse = angle - waypoint[routeCounter].courseToWaypoint ;
+  else if (Waypoint[routeCounter].courseToWaypoint <= 180){//---------------- waypoint is in 2/3 qudrant 
+    newCourse = angle - Waypoint[routeCounter].courseToWaypoint ;
     if (newCourse < 0)
       newCourse += 360;
     if (newCourse == 180){
@@ -531,8 +558,8 @@ void wichWay()
       {
         LRValue = slightRight;
       }}
-  else if (waypoint[routeCounter].courseToWaypoint > 180){//-----------------------waypoint is in 1/4 qudrant 
-    newCourse = (angle + (360 - waypoint[routeCounter].courseToWaypoint)); 
+  else if (Waypoint[routeCounter].courseToWaypoint > 180){//-----------------------waypoint is in 1/4 qudrant 
+    newCourse = (angle + (360 - Waypoint[routeCounter].courseToWaypoint)); 
     if (newCourse > 360) 
       newCourse -= 360; 
     if (newCourse == 180){
@@ -557,11 +584,11 @@ void wichWay()
     Serial.print(waypoint[routeCounter].distance);
     Serial.print("   ");
 */    
-    if (waypoint[routeCounter].distance > 10){    //tells the car to go forwards fast as long as the car is at least 10 meters away from the way point
+    if (Waypoint[routeCounter].distance > 10){    //tells the car to go forwards fast as long as the car is at least 10 meters away from the way point
        FRValue = fastForward;
-    }else if ((waypoint[routeCounter].distance <= 10 ) && (waypoint[routeCounter].distance  > 2)){    // slows the car down as it approaches the way point
+    }else if ((Waypoint[routeCounter].distance <= 10 ) && (Waypoint[routeCounter].distance  > 2)){    // slows the car down as it approaches the way point
         FRValue = slowForward;
-    }else if(waypoint[routeCounter].distance <= 2){    // once within 2 meters of way point it increases the counter for the next point if its the last point it ends the trip
+    }else if(Waypoint[routeCounter].distance <= 2){    // once within 2 meters of way point it increases the counter for the next point if its the last point it ends the trip
       routeCounter++; 
       if (routeCounter >= waypointCounter){
         FRValue = neutral; 
@@ -585,6 +612,7 @@ void wichWay()
 
 // This custom version of delay() ensures that the gps object
 // is being "fed".
+/*
 static void smartDelay(unsigned long ms)
 {
   unsigned long start = millis();
@@ -595,21 +623,36 @@ static void smartDelay(unsigned long ms)
       gps.encode(Wire.read());
   } while (millis() - start < ms);
 
-}
+}*/
 
 
-/*
+
 
 // This custom version of delay() ensures that the gps object
 // is being "fed".
 static void smartDelay(unsigned long ms)
 {
+  ssGPS.listen();
+   // delay(100);
+
+  
   unsigned long start = millis();
   do 
   {
+    
+    if(ssGPS.isListening())
+    {
+      //Serial.println(ssGPS.available()); 
     while (ssGPS.available())
-      gps.encode(ssGPS.read());
+    {
+     gps.encode((char)ssGPS.read());
+   
+     //Serial.print((char)ssGPS.read()); 
+    }
+    //Serial.println("");
+  }
   } while (millis() - start < ms);
+  ssGPS.stopListening();
 }
-*/
+
 

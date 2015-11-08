@@ -21,10 +21,10 @@
 
 
 // Singleton instance of the radio driver
-//RH_NRF24 driver;
+RH_NRF24 driver;
 
 //lowers the transmission rate to 250kBPS
-RH_NRF24 driver(2, 3);
+//RH_NRF24 driver(2, 3);
 
 //RH_NRF24 driver(8, 10);   // For RFM73 on Anarduino Mini
 
@@ -41,7 +41,7 @@ boolean stringComplete = false;  // whether the string is complete
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
 
-RHDatagram test(driver, CLIENT_ADDRESS);
+
 
 
 
@@ -49,18 +49,24 @@ RHDatagram test(driver, CLIENT_ADDRESS);
 
 void setup() 
 {
+  //driver.setRF(driver.DataRate250kbps, driver.TransmitPower0dBm);
+
+ Serial.begin(250000);
+  
   Serial.print("Here");
   pinMode(buttonPin, INPUT); 
   
-  Serial.begin(250000);
+ 
   if (!manager.init())
     Serial.println("init failed");
 
+//manager.setRetries(1);
+
+
+ //driver.setRF(driver.DataRate250kbps, driver.TransmitPower0dBm); 
+ //driver.setRF(driver.DataRate1Mbps, driver.TransmitPower0dBm);
   
-  /*
-  testing the unreliaable thing
-  */
-  test.init(); 
+   
 
 
 
@@ -99,7 +105,7 @@ void loop()
       
     }
 
-
+/*
  if((counter < 2000) && (stringComplete == false))
   {
        inputString = String(counter);
@@ -109,9 +115,9 @@ void loop()
           counter = 0;
        stringComplete = true; 
        Serial.print(inputString);
-  }
+  }*/
 
-    
+ /*   
   if(stringComplete == false)
   if(Serial.available())
   if(inputString = Serial.readString()) 
@@ -119,48 +125,24 @@ void loop()
     stringComplete = true;
     Serial.println(inputString); 
   }
-
+*/
   ///////////////////////////////////////enable this when using blueooth
-  //serialEvent();
+  serialEvent();
 
 
   if(stringComplete){
         Serial.println(inputString); 
-        //uint8_t test[200]; 
-        
-       // inputString.getBytes(test,200);
-        //inputString.getBytes(data,200);
-        /*
-        Serial.print("sizeof(inputString) = "); 
-        Serial.println(inputString.length()); 
-        Serial.print("RH_NRF24_MAX_MESSAGE_LEN = "); 
-        Serial.println(RH_NRF24_MAX_MESSAGE_LEN); 
-        Serial.print("sizeof(data) = ");
-        Serial.println(sizeof(data));
-        Serial.print("sizeof(test) = ");
-        Serial.println(sizeof(test));
+ 
+		unsigned char* bufferq;
+    inputString.getBytes(data,RH_NRF24_MAX_MESSAGE_LEN);
+/*
+		for (int counter = 0; counter < RH_NRF24_MAX_MESSAGE_LEN; counter++)
+			data[counter] = bufferq[counter];
 */
-         
-        if(inputString.length() > RH_NRF24_MAX_MESSAGE_LEN) 
-                   {
-                    Serial.print("before  "); 
-                    Serial.println(inputString); 
-                    
-                    inputString.getBytes(data,RH_NRF24_MAX_MESSAGE_LEN);
-                    inputString.remove(0, RH_NRF24_MAX_MESSAGE_LEN); 
-                    //inputString.trim(); 
-                    Serial.print("after  "); 
-                    Serial.println(inputString); 
-                   }else
-                   {
-                    inputString.getBytes(data,RH_NRF24_MAX_MESSAGE_LEN);
-                    inputString.remove(0, RH_NRF24_MAX_MESSAGE_LEN); 
-                   }
-                   
-        
-        
+        inputString.remove(0, RH_NRF24_MAX_MESSAGE_LEN); 
 
-         if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
+    Serial.println((char*)data);
+         if (manager.sendto(data, sizeof(data), SERVER_ADDRESS))
                   {
                          
                   // Now wait for a reply from the server
@@ -176,18 +158,17 @@ void loop()
                     Serial.print((char*)data);
           
           
-          
+
                     //this might have to get moved
                     Serial.print("        ");
                     Serial.println(inputString.length()); 
-                   if((inputString.length() == 0))
-                   {
+                    if((inputString.length() == 0))
+					{
                       inputString ="";
                       stringComplete = false;
-                   }
-                  }
-                  else
-                  {
+					}
+
+                  }else{
                     Serial.println("No reply, is nrf24_reliable_datagram_server running?");
                   }
                 }
@@ -199,7 +180,7 @@ void loop()
                   }
 
 
-                  delay(50);
+                  //delay(200);
   }
   
 
