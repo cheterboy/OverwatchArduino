@@ -30,7 +30,7 @@ AT+BAUDX: change baud rate, x is baud rate code, no space between command and co
 
 #include <SoftwareSerial.h>
 
-SoftwareSerial bt(2,4);//tx rx
+SoftwareSerial bt(6,7);//tx rx
 
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
@@ -43,8 +43,9 @@ void setup() {
 
   bt.begin(9600); 
   delay(1000);
-  
-  //bt.print("AT");
+ // bt.print("AT");
+ // delay(1000);
+  //bt.print("AT+BAUD1");
   //delay(1000);
 
   Serial.println("Done\n");

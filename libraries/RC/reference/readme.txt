@@ -1,1 +1,0 @@
-Please use doxygen (www.doxygen.org/) to generate the documentation using the provided Doxyfile

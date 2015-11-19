@@ -12,12 +12,14 @@
 //////////////////////////////////////////////////////////////////
 
 #include <Wire.h>
+#include <SoftwareSerial.h> 
 
 /*this array holds the servo values for the ppm signal
  change theese values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[chanel_number];
 int FRValue = 1500; 
 int LRValue = 1500; 
+void receiveEvent(int bytes); 
 
 
 void setup(){  
@@ -26,7 +28,8 @@ void setup(){
     ppm[i]= default_servo_value;
   }
   Serial.begin(9600);
-  //Wire.begin();
+  Wire.begin(9);
+  Wire.onReceive(receiveEvent);
   pinMode(sigPin, OUTPUT);
   digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
   
@@ -43,16 +46,17 @@ void setup(){
 
 void loop(){
 
-  uint8_t x = Wire.requestFrom(8, 1);
+  Serial.println(Wire.requestFrom(8, 1));
   //int FRValue = (1000+(x/10*100));
   //int LRValue = (1000+((x%10)*100));
 
   Serial.print(FRValue);
+  Serial.print("      "); 
   Serial.println(LRValue); 
   
 
- ppm[FowardReverse] = 1500; //map(analogRead(A0), 0, 1024, 1000, 2000); //value should be between 1000= full reverse, 1500=off, and 2000= full foward
- ppm[LeftRight] = 1500; // map(analogRead(A1), 0, 1024, 1000, 2000); //value should be between 1000= full left, 1500= centered, and 2000= full right(could be inversed will know for sure once installed)
+ ppm[FowardReverse] = 1500; 
+ ppm[LeftRight] = 1500; 
  delay(10);
 }
 
@@ -85,4 +89,8 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
       cur_chan_numb++;
     }     
   }
+}
+
+void receiveEvent(int bytes) {
+  Serial.print(Wire.read());    // read one character from the I2C
 }

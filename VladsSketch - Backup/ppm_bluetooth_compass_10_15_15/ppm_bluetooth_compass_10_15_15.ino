@@ -1,9 +1,17 @@
  #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
-#include <HM55B_Compass.h>
+//#include <HM55B_Compass.h>
 #include <Wire.h>
 //#include <stdlib.h> 
  
+
+
+#include <HMC5883L.h>
+#define COMPASSTOLERANCE 5
+HMC5883L compass;
+int error = 0;
+
+
 
 
 //          PPM
@@ -13,7 +21,7 @@
 #define PPM_FrLen 22000  //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
-#define sigPin 3  //set PPM signal output pin on the arduino
+#define sigPin 4 //set PPM signal output pin on the arduino
 #define FowardReverse 0 //set foward and reverse channel
 #define LeftRight 1 //set left and right channel
 /*
@@ -50,7 +58,7 @@ int LRValue = 1500;
 
 
 
-#define COMPASSTOLERANCE 10
+
 
 
 typedef struct waypoint {
@@ -66,6 +74,7 @@ typedef struct waypoint {
 //////////////////////////////////////////
 static const int RXPin = 4, TXPin = 2;
 static const uint32_t GPSBaud = 9600;
+static void smartDelay(unsigned long ms);
 //////////////////////////////////////
 
 
@@ -74,7 +83,7 @@ static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
 SoftwareSerial ssGPS(RXPin, TXPin);
 SoftwareSerial bt(6,7);//tx rx
-HM55B_Compass compass(8, 9, 10);
+//HM55B_Compass compass(8, 9, 10);
 
 
 //BlueTooth
@@ -106,15 +115,29 @@ void setup()
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
  
-  Serial.begin(115200);
+  Serial.begin(250000);
+
+  compass = HMC5883L(); // Construct a new HMC5883 compass.
+
+  //Serial.println("Setting scale to +/- 1.3 Ga");
+  error = compass.SetScale(1.3); // Set the scale of the compass.
+  if (error != 0) // If there is an error, print it out.
+    Serial.println(compass.GetErrorText(error));
+ 
+    //Serial.println("Setting measurement mode to continous.");
+  error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
+  if (error != 0) // If there is an error, print it out.
+    Serial.println(compass.GetErrorText(error));
+
+
    
   //ssGPS.begin(GPSBaud);
   //while(!ssGPS); 
-  bt.begin(1200);
+  bt.begin(2400);
   //while(!bt); 
 
 
-  compass.initialize();//start compass
+  //compass.initialize();//start compass
   //delay(100); 
 
   
@@ -123,8 +146,13 @@ void setup()
   //Serial.println("Done"); 
 
   smartDelay(3000);
-  
+ /*
+  pinMode(2,INPUT); 
+  attachInterrupt(0,react,FALLING); 
+ */ Serial.println("done initializing");
+   
 }
+
 
 bool followingGPS = false;
 waypoint waypoint[MAXWAYPOINTS];
@@ -138,10 +166,15 @@ int routeCounter = 0;
 //waypoint waypoint  = { 37.695730, -97.423314 , 0 , 0 ,0};
 
 
-
+int counter = 0; 
 void loop()
 {
-  
+  /*
+  Serial.println(counter); 
+  counter++; 
+  if (counter > 10000)
+    counter = 0; 
+  delay(100); */
 
   
   if(followingGPS)
@@ -151,6 +184,7 @@ void loop()
       bluetooth();
   }else
     bluetooth();
+  
   
   /*
   Serial.print(LRValue); 
@@ -242,8 +276,10 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
 
 void bluetooth()
 {
+
+  
   serialEvent();
-    if(stringComplete){
+if(stringComplete){
  Serial.println(inputString);  
 if(inputString == "~forward\n"){
      FRValue = slowForward;
@@ -293,10 +329,15 @@ if(inputString == "~forward\n"){
 
 }else if(inputString == "~uadlocation\n"){
     smartDelay(1000);
-    float x = gps.location.lat();
-    float y = gps.location.lng(); 
+float x = 0, y = 0; 
+   
+while(x == 0 || y == 0)
+{        
+  smartDelay(1000);
+ x = gps.location.lat();
+ y = gps.location.lng(); 
     
-
+}
       
     
      bt.print(x,6); 
@@ -433,9 +474,11 @@ void serialEvent() {
   
 
   //if(bt.isListening())
+  bt.listen();
   while (bt.available()) {
     // get the new byte:
     char inChar = (char)bt.read();
+    Serial.print(inChar); 
     // add it to the inputString:
     inputString += inChar;
     // if the incoming character is a newline, set a flag
@@ -495,7 +538,25 @@ void clearWaypointData()
 void wichWay()
 {
   
-  int angle = compass.read();
+  
+  MagnetometerRaw raw = compass.ReadRawAxis();
+  MagnetometerScaled scaled = compass.ReadScaledAxis();
+  int MilliGauss_OnThe_XAxis = scaled.XAxis;// (or YAxis, or ZAxis)
+  float heading = atan2(scaled.YAxis, scaled.XAxis);
+
+  float declinationAngle = 0.0346;
+  heading += declinationAngle;
+
+  // Correct for when signs are reversed.
+  if (heading < 0)
+    heading += 2 * PI;
+
+  // Check for wrap due to addition of declination.
+  if (heading > 2 * PI)
+    heading -= 2 * PI;
+
+  // Convert radians to degrees for readability.
+  int angle = heading * 180 / M_PI;
 
   if (angle < 0) 
   angle = 360+angle; 
@@ -612,4 +673,15 @@ static void smartDelay(unsigned long ms)
   } while (millis() - start < ms);
 }
 */
+void react() 
+{
+  Serial.print("jere"); 
+    followingGPS = false;
+     LRValue = straight; 
+     FRValue = neutral;
+     routeCounter = 0; 
+     waypointCounter = 0; 
+      clearWaypointData(); 
+  
+}
 
