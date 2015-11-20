@@ -7,7 +7,7 @@
 
 
 #include <HMC5883L.h>
-#define COMPASSTOLERANCE 5
+#define COMPASSTOLERANCE 7
 HMC5883L compass;
 int error = 0;
 
@@ -99,11 +99,43 @@ void setup()
 {
   Wire.begin();
   delay(1000);
-  Serial.begin(250000);
-  while(!Serial);
+
+  /////////////////////////////////////////////////////////
+ // Serial.begin(250000);
+ // while(!Serial);
   smartDelay(5000);
   
 
+
+
+
+
+  compass = HMC5883L(); // Construct a new HMC5883 compass.
+  delay(10);
+  //Serial.println("Setting scale to +/- 1.3 Ga");
+  
+  error = compass.SetScale(1.3); // Set the scale of the compass.
+  delay(10);
+  //if (error != 0) // If there is an error, print it out.
+    //Serial.println(compass.GetErrorText(error));
+
+ // Serial.println("Setting measurement mode to continous.");
+  error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
+  delay(10);
+  //if (error != 0) // If there is an error, print it out.
+    //Serial.println(compass.GetErrorText(error));
+
+
+  
+  bt.begin(2400);
+  delay(1000);
+  //while(!bt);
+  //bt.listen(); 
+
+
+  inputString.reserve(200);
+ 
+///////////////////////////////////////////////////////////////////////////
   for (int i = 0; i < chanel_number; i++) {
     ppm[i] = default_servo_value;
   }
@@ -119,42 +151,9 @@ void setup()
   TCCR1B |= (1 << WGM12);  // turn on CTC mode
   TCCR1B |= (1 << CS11);  // 8 prescaler: 0,5 microseconds at 16mhz
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
-  sei();
+  sei(); 
 
-
-//////////////////////////////////////////////////////
-
-  Serial.begin(250000);
-
-  compass = HMC5883L(); // Construct a new HMC5883 compass.
-  delay(10);
-  Serial.println("Setting scale to +/- 1.3 Ga");
-  
-  error = compass.SetScale(1.3); // Set the scale of the compass.
-  delay(10);
-  if (error != 0) // If there is an error, print it out.
-    Serial.println(compass.GetErrorText(error));
-
-  Serial.println("Setting measurement mode to continous.");
-  error = compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-  delay(10);
-  if (error != 0) // If there is an error, print it out.
-    Serial.println(compass.GetErrorText(error));
-
-
-  
-  bt.begin(2400);
-  delay(1000);
-  //while(!bt);
-  //bt.listen(); 
-
-
-  inputString.reserve(200);
- 
-///////////////////////////////////////////////////////////////////////////
-  
-
-  Serial.println("done initializing");  
+  //Serial.println("done initializing");  
 }
 
 
@@ -185,39 +184,6 @@ void loop()
 }
 
 
-ISR(TIMER1_COMPA_vect) { //leave this alone
-cli();
-  static boolean state = true;
-
-  TCNT1 = 0;
-
-  if (state) { //start pulse
-    digitalWrite(sigPin, onState);
-    OCR1A = PPM_PulseLen * 2;
-    state = false;
-  }
-  else { //end pulse and calculate when to start the next pulse
-    static byte cur_chan_numb;
-    static unsigned int calc_rest;
-
-    digitalWrite(sigPin, !onState);
-    state = true;
-
-    if (cur_chan_numb >= chanel_number) {
-      cur_chan_numb = 0;
-      calc_rest = calc_rest + PPM_PulseLen;//
-      OCR1A = (PPM_FrLen - calc_rest) * 2;
-      calc_rest = 0;
-    }
-    else {
-      OCR1A = (ppm[cur_chan_numb] - PPM_PulseLen) * 2;
-      calc_rest = calc_rest + ppm[cur_chan_numb];
-      cur_chan_numb++;
-    }
-  }
-
-sei();
-}
 
 
 void bluetooth()
@@ -227,7 +193,7 @@ void bluetooth()
 
   serialEvent();
   if (stringComplete) {
-    Serial.println(inputString);
+   //s Serial.println(inputString);
     if (inputString == "~forward\n") {
       FRValue = slowForward;
     } else if (inputString == "~notforward\n") {
@@ -254,6 +220,7 @@ void bluetooth()
       int test = 0;
 
 
+      /*
       while (test < waypointCounter)
       {
         //Serial.print(test);
@@ -261,21 +228,28 @@ void bluetooth()
         Serial.print(",");
         Serial.println(waypoint[test].longitude, 6);
         test++;
-      }
-
-
-      routeCounter = 0;
-      followingGPS = true;
-
+      }*/
+      if (waypointCounter > 0)
+      {
+        routeCounter = 0;
+        followingGPS = true;
+      } 
+      
     } else if (inputString == "~stoproute\n") {
       followingGPS = false;
       LRValue = straight;
       FRValue = neutral;
-      routeCounter = 0;
-      waypointCounter = 0;
+     // routeCounter = 0;
+     // waypointCounter = 0;
       //clearWaypointData();
 
+    }else if (inputString == "~clearroute\n") {
+      
+      clearWaypointData();
+
     } else if (inputString == "~uadlocation\n") {
+      
+      /*
       smartDelay(1000);
       float x = 0, y = 0;
 
@@ -286,7 +260,16 @@ void bluetooth()
       bt.print(",");
       bt.print(y, 6);
       bt.print("\n");
+*/ 
+      bt.print(gps.location.lat(), 6);
+      bt.print(",");
+      bt.print(gps.location.lng(), 6);
+      bt.print("\n");
 
+      smartDelay(1000); 
+
+
+    
     } else if (inputString == "~select\n") {
 
 
@@ -337,20 +320,19 @@ void bluetooth()
 
 void serialEvent() {
 
-
-
-
   while (bt.available()) {
     // add it to the inputString:
 
   char inChar = (char)bt.read();
     
     inputString += inChar; 
+
+   // Serial.print(inChar); 
     // if the incoming character is a newline, set a flag
     // so the main loop can do something about it:
  
    
-   // Serial.print(inChar); 
+    //Serial.print(inChar); 
     
     if (inChar == '\n') {
       stringComplete = true;
@@ -363,7 +345,7 @@ void getGPSData()
 {
 
 
-  smartDelay(200);
+  smartDelay(500);
   waypoint[routeCounter].distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
       gps.location.lat(),
@@ -378,8 +360,8 @@ void getGPSData()
       waypoint[routeCounter].latitude,
       waypoint[routeCounter].longitude);
 
- //waypoint[routeCounter].distance =
- //waypoint[routeCounter].courseToWaypoint =
+// waypoint[routeCounter].distance = 100; 
+// waypoint[routeCounter].courseToWaypoint = 200; 
     
 }
 
@@ -387,14 +369,18 @@ void getGPSData()
 void clearWaypointData()
 {
   int counter = 0;
-  while (counter < MAXWAYPOINTS)
+  while (counter <= waypointCounter)
   {
     waypoint[counter].latitude = 0;
     waypoint[counter].longitude = 0;
     waypoint[counter].courseToWaypoint = 0;
     waypoint[counter].distance = 0;
     waypoint[counter].estimatedArrivalTime = 0;
+    counter++; 
   }
+
+  waypointCounter = 0; 
+  
 
 
 }
@@ -472,11 +458,12 @@ void wichWay()
       LRValue = slightRight;
     }
   }
+ 
   if (waypoint[routeCounter].distance > 10) {   //tells the car to go forwards fast as long as the car is at least 10 meters away from the way point
     FRValue = fastForward;
-  } else if ((waypoint[routeCounter].distance <= 10 ) && (waypoint[routeCounter].distance  > 2)) {   // slows the car down as it approaches the way point
+  } else if ((waypoint[routeCounter].distance <= 10 ) && (waypoint[routeCounter].distance  > 5)) {   // slows the car down as it approaches the way point
     FRValue = slowForward;
-  } else if (waypoint[routeCounter].distance <= 2) {  // once within 2 meters of way point it increases the counter for the next point if its the last point it ends the trip
+  } else if (waypoint[routeCounter].distance <= 5) {  // once within 2 meters of way point it increases the counter for the next point if its the last point it ends the trip
     routeCounter++;
     if (routeCounter >= waypointCounter) {
       FRValue = neutral;
@@ -485,7 +472,8 @@ void wichWay()
       clearWaypointData();
     }
   }
-  
+
+   
 }
 
 
@@ -494,29 +482,54 @@ void wichWay()
 // is being "fed".
 static void smartDelay(unsigned long ms)
 {
-  //Serial.println("Here"); 
-  
+
   unsigned long start = millis();
-  do
+  do 
   {
-     //Serial.println("Here"); 
-    Wire.requestFrom(8,1);
-    //delay(10);
-    if (Wire.available())
+    Wire.requestFrom(8, 1, false);
+    
+    while ((Wire.available()))
     {
-       int x = Wire.read(); 
-       if (x == 255) 
-          if (ms != 5000)
-          return; 
-          else
-          break; 
-        else
-        {  
-       Serial.print((char)x); 
-        gps.encode((char)x); 
-        }
+     char x = (char)Wire.read(); 
+     //Serial.print(x); 
+     gps.encode(x);
+
     }
   } while (millis() - start < ms);
 
 }
+
+
+
+ISR(TIMER1_COMPA_vect) { //leave this alone
+  static boolean state = true;
+
+  TCNT1 = 0;
+
+  if (state) { //start pulse
+    digitalWrite(sigPin, onState);
+    OCR1A = PPM_PulseLen * 2;
+    state = false;
+  }
+  else { //end pulse and calculate when to start the next pulse
+    static byte cur_chan_numb;
+    static unsigned int calc_rest;
+
+    digitalWrite(sigPin, !onState);
+    state = true;
+
+    if (cur_chan_numb >= chanel_number) {
+      cur_chan_numb = 0;
+      calc_rest = calc_rest + PPM_PulseLen;//
+      OCR1A = (PPM_FrLen - calc_rest) * 2;
+      calc_rest = 0;
+    }
+    else {
+      OCR1A = (ppm[cur_chan_numb] - PPM_PulseLen) * 2;
+      calc_rest = calc_rest + ppm[cur_chan_numb];
+      cur_chan_numb++;
+    }
+  }
+}
+
 

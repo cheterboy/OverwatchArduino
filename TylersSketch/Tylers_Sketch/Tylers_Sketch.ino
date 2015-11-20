@@ -6,18 +6,27 @@
 #define PPM_FrLen 22000  //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
-#define sigPin 10  //set PPM signal output pin on the arduino
+#define sigPin 4  //set PPM signal output pin on the arduino
 #define FowardReverse 0 //set foward and reverse channel
 #define LeftRight 1 //set left and right channel
 //////////////////////////////////////////////////////////////////
 
+ unsigned long start; 
+ unsigned long finish; 
 
+int FRValue = 1500; 
+int LRValue = 1500; 
+
+ 
 /*this array holds the servo values for the ppm signal
  change theese values in your code (usually servo values move between 1000 and 2000)*/
 int ppm[chanel_number];
 
 void setup(){  
   //initiallize default ppm values
+
+  Serial.begin(250000); 
+  
   for(int i=0; i<chanel_number; i++){
     ppm[i]= default_servo_value;
   }
@@ -35,15 +44,34 @@ void setup(){
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
 }
-
+int x; 
 void loop(){
 
- ppm[FowardReverse] = map(analogRead(A0), 0, 1024, 1000, 2000); //value should be between 1000= full reverse, 1500=off, and 2000= full foward
- ppm[LeftRight] = map(analogRead(A1), 0, 1024, 1000, 2000); //value should be between 1000= full left, 1500= centered, and 2000= full right(could be inversed will know for sure once installed)
-  delay(10);
+ ppm[FowardReverse] = FRValue; //map(analogRead(A0), 0, 1024, 1000, 2000); //value should be between 1000= full reverse, 1500=off, and 2000= full foward
+ ppm[LeftRight] = LRValue;//map(analogRead(A1), 0, 1024, 1000, 2000); //value should be between 1000= full left, 1500= centered, and 2000= full right(could be inversed will know for sure once installed)
+
+
+  //Serial.println(millis());
+  /*
+  if( millis() > 5000)
+    {
+      FRValue = 1600;
+      LRValue = 1600;
+      //Serial.println("Here");
+    }*/
+    
+
+
+  //delay(10);
+  ////x = finish - start; 
+  delay(10000); 
+  Serial.println( x);
 }
 
 ISR(TIMER1_COMPA_vect){  //leave this alone
+ // finish = micros(); 
+ 
+  x = micros() - start ; 
   static boolean state = true;
   
   TCNT1 = 0;
@@ -72,4 +100,10 @@ ISR(TIMER1_COMPA_vect){  //leave this alone
       cur_chan_numb++;
     }     
   }
+
+
+
+  start = micros(); 
+
+  
 }

@@ -475,9 +475,11 @@ void wichWay()
         LRValue = straight;
         followingGPS = false;
       }  
-    }else {
-      FRValue = neutral;    //idk if we actually need this i think its here for a safety if the program freaks out
-    }  
+    }
+    
+    //else {
+    //  FRValue = neutral;    //idk if we actually need this i think its here for a safety if the program freaks out
+    //}  
  
     //return;
     
