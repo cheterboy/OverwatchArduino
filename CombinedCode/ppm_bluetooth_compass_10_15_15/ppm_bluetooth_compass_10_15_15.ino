@@ -10,28 +10,43 @@
 #define PPM_FrLen 22000  //set the PPM frame length in microseconds (1ms = 1000µs)
 #define PPM_PulseLen 300  //set the pulse length
 #define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
-#define sigPin 3  //set PPM signal output pin on the arduino
+#define sigPin 4  //set PPM signal output pin on the arduino
+#define FowardReverse 0 //set foward and reverse channel
+#define LeftRight 1 //set left and right channel
+//          PPM
+///////////////////////////////////////////////////
+#define chanel_number 6  //set the number of chanels
+#define default_servo_value 1500  //set the default servo value
+#define PPM_FrLen 22000  //set the PPM frame length in microseconds (1ms = 1000µs)
+#define PPM_PulseLen 300  //set the pulse length
+#define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
+#define sigPin 4 //set PPM signal output pin on the arduino
 #define FowardReverse 0 //set foward and reverse channel
 #define LeftRight 1 //set left and right channel
 /*
-#define straight 1500
-#define slightLeft 1250
-#define slightRight 1750
-#define hardLeft 1100
-#define hardRight 1900
+  #define straight 1500
+  #define slightLeft 1250
+  #define slightRight 1750
+  #define hardLeft 1100
+  #define hardRight 1900
 */
-#define straight 1530
-#define slightLeft 1750
+#define MAXWAYPOINTS 15
+
+#define straight 1450
+static void smartDelay(unsigned long ms);
+
+//#define straight 1500
+#define slightLeft 1550
 #define slightRight 1350
 #define hardLeft 1900
 #define hardRight 1100
 
 
 #define neutral 1500
-#define slowForward 1650 
-#define fastForward 1650 
-#define slowBackward 1350
-#define fastBackward  1350
+int slowForward =1700;
+int fastForward = 1700;
+int slowBackward =1300;
+int fastBackward = 1300;
 
 
 int ppm[chanel_number];
@@ -50,13 +65,13 @@ typedef struct waypoint {
   double longitude;
   float courseToWaypoint; 
   float distance; 
-  int estimatedArrivalTime;  
+  //int estimatedArrivalTime;  
  };
 
 
 //GPS
 //////////////////////////////////////////
-static const int RXPin = 2, TXPin = 4;
+static const int RXPin = 4, TXPin = 2;
 static const uint32_t GPSBaud = 9600;
 //////////////////////////////////////
 
@@ -80,7 +95,26 @@ boolean stringComplete = false;  // whether the string is complete
 void setup()
 {
   Wire.begin();
-    
+  delay(1000); 
+smartDelay(5000); 
+  
+ 
+   Serial.begin(115200);
+   
+  //ssGPS.begin(GPSBaud);
+  //while(!ssGPS); 
+  bt.begin(1200);
+  //while(!bt); 
+
+
+  compass.initialize();//start compass
+  //delay(100); 
+
+  
+  //getGPSData();
+  inputString.reserve(200);
+
+
   for(int i=0; i<chanel_number; i++){
     ppm[i]= default_servo_value;
   }
@@ -97,21 +131,8 @@ void setup()
   TCCR1B |= (1 << CS11);  // 8 prescaler: 0,5 microseconds at 16mhz
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
- 
-   Serial.begin(115200);
-   
-  //ssGPS.begin(GPSBaud);
-  //while(!ssGPS); 
-  bt.begin(1200);
-  //while(!bt); 
-
-
-  compass.initialize();//start compass
-  //delay(100); 
 
   
-  //getGPSData();
-  inputString.reserve(200);
   Serial.println("Done"); 
   
 }
@@ -234,37 +255,88 @@ if(inputString == "~forward\n"){
      LRValue = hardRight;
 }else if(inputString == "~notright\n"){
      LRValue = straight;
-}else if(inputString == "~start\n"){
+}else if(inputString == "~stoproute\n"){
      followingGPS = false;
      LRValue = straight; 
      FRValue = neutral;
-     routeCounter = 0; 
-     waypointCounter = 0; 
+     //routeCounter = 0; 
+     //waypointCounter = 0; 
       
      
-}else if(inputString == "~select\n"){
-      routeCounter = 0;
-      followingGPS = true;
+}else if(inputString == "~startroute\n"){
+      if(waypointCounter > 0) 
+      {
+        routeCounter = 0;
+        followingGPS = true;      
+      }
+      
       
 }else if(inputString == "~a\n"){
-     while(FRValue < 2000) 
-     {
-        ppm[FowardReverse] = FRValue;
-        ppm[LeftRight] = LRValue;
-        FRValue++;
-        //Serial.println(FRValue);  
-     }
+      slowForward += 50;
+        fastForward += 50;
+        slowBackward  -=50;
+        fastBackward  -= 50;
+
+        if(slowForward > 2000)
+          {
+            slowForward = 1600; 
+            fastForward = 1600; 
+            slowBackward = 1400; 
+            fastBackward = 1400; 
+          }
+
+
  
 }else if(inputString == "~b\n"){
-     while(FRValue > 1000) 
-     {
-        ppm[FowardReverse] = FRValue;
-        ppm[LeftRight] = LRValue;
-        FRValue--; 
-        //Serial.println(FRValue); 
-     }
+     slowForward -= 50;
+        fastForward -= 50;
+        slowBackward  +=50;
+        fastBackward  += 50;
 
-}else if (isdigit(inputString[0])){
+        if(slowForward < 1600)
+          {
+            slowForward = 1600; 
+            fastForward = 1600; 
+            slowBackward = 1400; 
+            fastBackward = 1400; 
+          }
+}else if (inputString == "~uadlocation\n") {
+      
+      /*
+      smartDelay(1000);
+      float x = 0, y = 0;
+
+      x = gps.location.lat();
+      y = gps.location.lng();
+
+      bt.print(x, 6);
+      bt.print(",");
+      bt.print(y, 6);
+      bt.print("\n");
+*/ 
+     /*
+      Serial.print("Current location  "); 
+      Serial.print(gps.location.lat(), 6);
+      Serial.print(",");
+      Serial.print(gps.location.lng(), 6);
+      Serial.print("\n");
+   */ 
+      
+      bt.print(gps.location.lat(), 6);
+      bt.print(",");
+      bt.print(gps.location.lng(), 6);
+      bt.print("\n");
+
+      smartDelay(1000); 
+
+      while(gps.location.lat() == 0)
+      {
+       // Serial.println("here");
+        smartDelay(1000); 
+      }
+
+    
+    }else if (isdigit(inputString[0])){
 
 
 /*
@@ -306,28 +378,7 @@ if(inputString == "~forward\n"){
       waypoint[waypointCounter].longitude = strtod(longitude.c_str(),&ptr);
       //delay(20);
    
-    /*
-      Serial.print("waypointNumber String = "); 
-      Serial.print(waypointNumber); 
-      Serial.print("  waypointNumber = "); 
-      Serial.println(waypointCounter); 
-
-
-      Serial.print("latitude String = "); 
-      Serial.print(latitude); 
-      Serial.print("  latitude = "); 
-      Serial.println(waypoint[waypointCounter].latitude,6); 
-
-
-      Serial.print("longitude String = "); 
-      Serial.print(longitude); 
-      Serial.print("  longitude = ");
-      Serial.println(waypoint[waypointCounter].longitude,6); 
-      
-      Serial.println(); 
-      Serial.println(); 
-
-      */
+ 
       waypointCounter++; 
       if (waypointCounter > 10)
         waypointCounter =0; 
@@ -370,7 +421,7 @@ void getGPSData()
 {
 
   
-  smartDelay(300);
+  smartDelay(1000);
 
   waypoint[routeCounter].distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
@@ -472,25 +523,11 @@ void wichWay()
       if (routeCounter > waypointCounter){
         FRValue = neutral; 
         LRValue = straight;
-<<<<<<< HEAD
         followingGPS = false;
       }  
     }
     
-    //else {
-    //  FRValue = neutral;    //idk if we actually need this i think its here for a safety if the program freaks out
-    //}  
-=======
-        followingGPS = false; 
-      }
-
-    }else {
-    FRValue = neutral; 
-    } 
->>>>>>> parent of 231e8d9... Working with one point, fixed distance issue
- 
-    //return;
-    
+  
       
 }
 
@@ -504,7 +541,7 @@ static void smartDelay(unsigned long ms)
   unsigned long start = millis();
   do 
   {
-    Wire.requestFrom(8, 1);
+    Wire.requestFrom(8, 1, false);
     while ((Wire.available()))
       gps.encode(Wire.read());
   } while (millis() - start < ms);
