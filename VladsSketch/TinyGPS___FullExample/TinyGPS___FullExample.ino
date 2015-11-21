@@ -22,7 +22,7 @@ SoftwareSerial ss(6, 7);
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(250000);
   ss.begin(GPSBaud);
 
   Serial.println(F("FullExample.ino"));

@@ -17,14 +17,15 @@ SoftwareSerial mySerial(6, 7); // RX, TX
 
 
 
+
 void setup()
 {
-  Serial.begin(9600);
+  //Serial.begin(250000);
   Wire.begin(8);                // join i2c bus with address #8
   Wire.onRequest(requestEvent); // register event
   mySerial.begin(9600);
-  delay(1000); 
-  Serial.println("GPS initializaton done"); 
+  //delay(1000); 
+  //Serial.println("GPS initializaton done"); 
 }
 
 //String inputString; 
@@ -33,7 +34,7 @@ void loop()
 {
 //while(mySerial.available()) 
 //if(mySerial.available())
-//  Serial.print((char)mySerial.read());
+//   Serial.print((char)mySerial.read());
   //delay(10); 
 //if(Serial.available())
 //  mySerial.print(Serial.read()); 
@@ -47,9 +48,9 @@ void requestEvent()
   //Serial.print("Here"); 
   if(mySerial.available())
     {
-     // char x = (char)mySerial.read(); 
-     // Serial.print(x); 
-      Wire.write((char)mySerial.read()); 
+      char x = (char)mySerial.read(); 
+      //Serial.print(x); 
+      Wire.write(x); 
     }
 
 }
