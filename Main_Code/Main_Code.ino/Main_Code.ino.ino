@@ -1,4 +1,4 @@
-
+//Worked on 2/10/16
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 #include <LiquidCrystal.h>//LCD
@@ -171,22 +171,22 @@ void loop()
   //prints Heading using the global variable angle 
   lcd1_print_data("H", angle, 0, 0 , 0);
   //for testing lets the user see the heading 
-  delay(200); 
+  
   //Get the gps data from the module and update the GPS object with that data 
-  getGPS(100); 
+  getGPSData(); 
   /*
    * 
    *prints GPS LAT LON on screen two 
    *print_GPS(); 
  */ 
    
-  /*
-   * Waypoint data print to lcd 1
+  
+//   * Waypoint data print to lcd 1
    
    lcd1_print_data("CurWP", routeCounter, 0, 2 , 0);
    lcd1_print_data("TotWP", waypointCounter, 0, 2 , 7);
 
-   */
+ 
    
   if (followingGPS)
   {
@@ -350,10 +350,16 @@ void bluetooth()
       delay(10);
       waypoint[waypointCounter].longitude = (double)strtod(longitude.c_str(), &ptr);
 
+
+
       waypointCounter++;
       if (waypointCounter > 10)
         waypointCounter = 0;
-
+      
+      //void lcd1_print_data(String label, float data_value , int precision , int line_number , int column)
+     // lcd1_print_data("Lat",  waypoint[waypointCounter - 1].latitude , 6 , 0 , 0); 
+     // lcd1_print_data("Lon",  waypoint[waypointCounter - 1].longitude , 6 , 1 , 0); 
+      
     } else {
       /*followingGPS = false;
       LRValue = straight;
@@ -386,7 +392,7 @@ void getGPSData()
 {
 
 
-  getGPS(400);
+  getGPS(100);
 
   waypoint[routeCounter].distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
@@ -396,6 +402,10 @@ void getGPSData()
       waypoint[routeCounter].longitude);
   //Serial.print(waypoint[routeCounter].distance);
   //printInt(distance, gps.location.isValid(), 9);
+//void lcd1_print_data(String label, float data_value, int precision, int line_number , int column);
+  
+  //Prints the distance to the 
+  //lcd1_print_data("D " , waypoint[routeCounter].distance , 0 , 0 ,0); 
 
   waypoint[routeCounter].courseToWaypoint =
     TinyGPSPlus::courseTo(
@@ -420,7 +430,7 @@ void lcd1_print_data(String label, float data_value , int precision , int line_n
       lcd.print(data_value, precision);
     }else 
     lcd.print("                  "); 
-
+     delay(100); 
 }
 
 void lcd2_print_data(String label, float data_value, int precision, int line_number ,int column)
@@ -437,6 +447,7 @@ void lcd2_print_data(String label, float data_value, int precision, int line_num
     lcd2.print(data_value, precision);
   }else
   lcd2.print("       "); 
+  delay(100); 
 }
 
 void wichWay()
