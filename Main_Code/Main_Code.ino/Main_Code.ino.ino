@@ -1,8 +1,10 @@
 //Worked on 2/10/16
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
+//LCD_Comment
+/*
 #include <LiquidCrystal.h>//LCD
-
+*/
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303_U.h>
@@ -20,11 +22,11 @@
 #define FowardReverse 0 //set foward and reverse channel
 #define LeftRight 1 //set left and right channel
 
-#define straight 1500
-#define slightLeft 1600
-#define slightRight 1400
-#define hardLeft 1800
-#define hardRight 1200
+int straight  = 1500;
+int slightLeft = 1600;
+int slightRight  = 1400;
+int hardLeft = 1800; 
+int hardRight = 1200; 
 
 #define increment 10
 
@@ -41,15 +43,12 @@ struct WAYPOINT {
   float distance;
   int estimatedArrivalTime;
 };
-
-
-
-
-
-
-
+//LCD_Comment
+/*
 LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
 LiquidCrystal lcd2(8, 7, 10, 11, 12, 13);
+*/
+
 Adafruit_LSM303_Accel_Unified accel(30301);
 Adafruit_LSM303_Mag_Unified   mag(30302);
 Adafruit_BMP085_Unified       bmp(18001);
@@ -72,8 +71,12 @@ int routeCounter = 0;
 float angle;
 float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
 static void getGPS(unsigned long ms);
+
+//LCD_Comment
+/*
 void lcd1_print_data(String label, float data_value, int precision, int line_number , int column);
 void lcd2_print_data(String label, float data_value, int precision, int line_number , int column);
+*/
 
 void setup()
 {
@@ -109,14 +112,15 @@ void setup()
   TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
   sei();
   
-
+//LCD_Comment
+/*
   //LCD Screens for testing 
   lcd.begin(16, 2);
   String x = "LCD 1 Start"; 
   lcd1_print_data(x, -999, 0, 0 ,0);
   lcd2.begin(16, 2);
   lcd2_print_data("LCD 2 Start", -999, 0, 0 ,0);
-
+*/
 }
 
 
@@ -168,10 +172,13 @@ void loop()
   
   //sets the global variable angle to the proper heading 
   get_heading();
+
+  //LCD_Comment
+/*
   //prints Heading using the global variable angle 
   lcd1_print_data("H", angle, 0, 0 , 0);
   //for testing lets the user see the heading 
-  
+  */
   //Get the gps data from the module and update the GPS object with that data 
   getGPSData(); 
   /*
@@ -180,19 +187,23 @@ void loop()
    *print_GPS(); 
  */ 
    
-  
+  //LCD_Comment
+/*
 //   * Waypoint data print to lcd 1
    
    lcd1_print_data("CurWP", routeCounter, 0, 2 , 0);
    lcd1_print_data("TotWP", waypointCounter, 0, 2 , 7);
-
+*/
  
    
   if (followingGPS)
   {
     wichWay();
+    //LCD_Comment
+/*
     lcd1_print_data("C", angle, 0, 0 , 7);
     lcd2_print_data("D", waypoint[routeCounter].distance, 0, 1 , 9);
+    */
     bluetooth();
   } else
     bluetooth();
@@ -201,7 +212,8 @@ void loop()
    ppm[FowardReverse] = FRValue;
    ppm[LeftRight] = LRValue;
 
-
+//LCD_Comment
+/*
     //Prints the current wheel position 
     if(LRValue < 1500)
       lcd2_print_data("Right", -999, 0, 1 , 0);
@@ -209,7 +221,7 @@ void loop()
       lcd2_print_data("Left", -999, 0, 1 , 0);
     else
       lcd2_print_data("Straight", -999, 0, 1 , 0);
-
+*/
    
   } 
 
@@ -254,11 +266,13 @@ void bluetooth()
   serialEvent();
   if (stringComplete) {
    // lcd1_print_data(inputString, 0, 0, 1);
+    //LCD_Comment
+/*
     lcd2_print_data(inputString, -999, 0, 0 ,0);
-    //delay(10);
+*/
     //lcd2_print_data(inputString, -999, 0,1);
     //Serial.println("Here"); 
-    //delay(1000); 
+  
     if (inputString == "~forward\n") {
       FRValue = slowForward;
     } else if (inputString == "~notforward\n") {
@@ -313,41 +327,47 @@ void bluetooth()
          bt.print("\n");
       }
     } else if (inputString == "~b\n") {
-      //decrease the current values 
-      slowForward -= increment;
-      fastForward -= increment;
-      slowBackward  += increment;
-      fastBackward  += increment;
-      //limit on decreasing 
-      //Resets when values get tooo high 
-      if (slowForward < 1510)
-      {
-        slowForward = 1600;
-        fastForward = 1600;
-        slowBackward = 1400;
-        fastBackward = 1400;
-      }
+          
+          if( slightLeft == 1600)
+          {
+            slightLeft = 1400;
+            hardLeft  = 1200;
+            slightRight  = 1600;
+            hardRight  = 1800;
+          }else
+          {
+            slightLeft = 1600;
+            slightRight  = 1400;
+            hardLeft  = 1800;
+            hardRight  = 1200;
+          }
+          
     } else if (isdigit(inputString[0])) {
-       String waypointNumber = inputString;
-      //delay(10);
+      String waypointNumber = inputString;
+     
       String latitude = inputString;
-      //delay(10);
+
       String longitude = inputString;
-      //delay(10);
+
       //find where the first comma is at
       int one = inputString.indexOf(',');
       //find where the second comma is at
       int two = inputString.lastIndexOf(',');
 
-      //trim the string to just the number
+      //removes everything after the first comma 
       waypointNumber.remove(one);
+
+      //removes everything before first comma 
       latitude.remove(0, one + 1);
+      //removes everything after the second comma 
       latitude.remove(two - 2);
+
+      //removes everything before the secon comma 
       longitude.remove(0, two + 1);
 
       char *ptr;
       waypoint[waypointCounter].latitude = (double)strtod(latitude.c_str(), &ptr);
-      delay(10);
+   
       waypoint[waypointCounter].longitude = (double)strtod(longitude.c_str(), &ptr);
 
 
@@ -390,21 +410,15 @@ void serialEvent() {
 
 void getGPSData()
 {
-
-
   getGPS(100);
-
   waypoint[routeCounter].distance =
     (unsigned long)TinyGPSPlus::distanceBetween(
       gps.location.lat(),
       gps.location.lng(),
       waypoint[routeCounter].latitude,
       waypoint[routeCounter].longitude);
-  //Serial.print(waypoint[routeCounter].distance);
-  //printInt(distance, gps.location.isValid(), 9);
-//void lcd1_print_data(String label, float data_value, int precision, int line_number , int column);
-  
-  //Prints the distance to the 
+
+  //Prints the distance to the next waypoint 
   //lcd1_print_data("D " , waypoint[routeCounter].distance , 0 , 0 ,0); 
 
   waypoint[routeCounter].courseToWaypoint =
@@ -414,7 +428,8 @@ void getGPSData()
       waypoint[routeCounter].latitude,
       waypoint[routeCounter].longitude);
 }
-
+//LCD_Comment
+/*
 void lcd1_print_data(String label, float data_value , int precision , int line_number , int column)
 {
   if ((line_number == 0) && (column == 0))
@@ -430,7 +445,7 @@ void lcd1_print_data(String label, float data_value , int precision , int line_n
       lcd.print(data_value, precision);
     }else 
     lcd.print("                  "); 
-     delay(100); 
+    // delay(100); 
 }
 
 void lcd2_print_data(String label, float data_value, int precision, int line_number ,int column)
@@ -447,44 +462,11 @@ void lcd2_print_data(String label, float data_value, int precision, int line_num
     lcd2.print(data_value, precision);
   }else
   lcd2.print("       "); 
-  delay(100); 
-}
+  //delay(100); 
+}*/
 
 void wichWay()
 {
-/*
-   lcd.setCursor(0,0);
-   lcd.print("H"); 
-   lcd.print(angle);
-*/
-  /*
-  Serial.print("  Compas = ");
-  Serial.print(angle);
-  Serial.print("   going to  = ");
-  Serial.print(waypoint[routeCounter].courseToWaypoint);
-
-
-  
-  Serial.print("   d = ");
-  Serial.print(waypoint[routeCounter].distance);
-  Serial.print("    wC  ");
-  Serial.print(waypointCounter); 
-  Serial.print("   rC   ");
-  Serial.print(routeCounter); 
-  Serial.print("   goint to lat   ");
-  Serial.print(waypoint[routeCounter].latitude , 6); 
-  Serial.print("  lon   ");
-  Serial.print(waypoint[routeCounter].longitude , 6);
-  Serial.print("   current lat   ");
-  Serial.print(gps.location.lat(), 6); 
-  Serial.print("  lon   ");
-  Serial.println(gps.location.lng(), 6);
-  */
-/*
- * --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- */
-
-  
   float newCourse;
   if ((waypoint[routeCounter].courseToWaypoint <= angle + COMPASSTOLERANCE) &&
       (waypoint[routeCounter].courseToWaypoint >= angle - COMPASSTOLERANCE)) {
@@ -495,7 +477,6 @@ void wichWay()
     if (newCourse < 0)
       newCourse += 360;
     if (newCourse == 180) {
-      //Serial.print("Turn around");
       LRValue = hardLeft;
     } else if (newCourse < 180)
     {
@@ -511,28 +492,19 @@ void wichWay()
     if (newCourse > 360)
       newCourse -= 360;
     if (newCourse == 180) {
-      //Serial.print("Turn around");
       LRValue = hardLeft;
     } else if (newCourse < 180)
     {
-      //Serial.print("Go left  ");
-      //Serial.print(newCourse);
-      //Serial.println();
       LRValue = slightLeft;
     }
     else if (newCourse > 180)
     {
-      //Serial.print("Go right   ");
-      //Serial.print(360 - newCourse);
-      //Serial.println();
       LRValue = slightRight;
     }
   }
   
   if (waypoint[routeCounter].distance >= 7) {
     FRValue = slowForward;
-    //else if(waypoint[routeCounter].distance < 20)
-    //FRValue = slowForward;
   } else if (waypoint[routeCounter].distance < 7) {
     routeCounter++;
     if (routeCounter >= waypointCounter) {
@@ -546,6 +518,8 @@ void wichWay()
   }
 }
 
+
+//Feeds gps data into the TinyGPS++ library 
 static void getGPS(unsigned long ms)
 { 
   if (ms > 0)
