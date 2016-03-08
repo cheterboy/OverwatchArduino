@@ -1,0 +1,119 @@
+
+
+//Rn-41 commands 
+$$$ 		--no new line enters command mode 
+---<cr> 	--ends at mode
+every other command needs new line
+S-,<string><cr>		--name the device 
+H<cr>  			-- help 
+I,30<cr>  		-- scanns for available usb 			   devices
+C,<address><cr>		--connects to an address 
+SR,<address><cr> 	--saves this address 
+k,1<cr> 		--kills connection 
+//once killed print $$$ with no <cr> to enter connectable mode again.
+
+SU,<baud> 		--sets the baud(only need first 			two numbers) 
+			1200, 2400, 4800, 9600, 19.2, 					28.8, 38.4, 57.6, 115K, 230K, 					460K, or 921K. 
+
+Steps for the data muel 
+
+-------------------------------------GCS
+connectable mode
+'muel'		save data			<-- phone
+'muel'		upload data			--> phone
+wait for command to switch 'modes'
+-------------------------------------Start route 
+listen for in range modules
+connect to 'slave' module 
+'muel'		upload data			--> UAD
+send a command to recive data  			
+'muel'		download 			<-- UAD
+kill connection 
+reinitiate connectable mode 
+-------------------------------------Finish route
+
+
+Phone needs to be able to get the data from muel 
+Phone needs to send data to the muel 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////
+3.7.6 Discovery & Connection Example Sequence
+The following example goes through a master discovery/connection sequence from
+power up and no connection.
+1. Perform an inquiry to obtain the Bluetooth address (unless it is already known).
+Send: $$$ // Places radio in command mode
+Reply:CMD<cr>
+Send: I,30<cr> // Look for Bluetooth devices
+Reply:00A096112233,1F00<cr>Inquiry Done<cr>
+2. Store the remote address that you just found.
+Send: SR,00A096112233<cr> // or type SR,I if this was the only device
+// found
+Reply:AOK<cr>
+3. Connect.
+Send: C<cr> // Places the radio in connect mode
+Reply:AOK<cr>
+The device attempts to connect to the remote slave. The terminal displays TRYING
+while the device attempts to connect.
+Reply:<string>CONNECT<cr> // Where <string> is an alphanumeric
+// string defined in the stored parameters
+4. Send/receive data.
+
+
+
+
+
+///check out these commands 
+SM,3  		PG24 Auto-Connect Master Mode 
+SN,<string>   	PG24 sets the name of the device 
+SW,<value>    	PG26 low-power sniff mode 
+SP,<string>   	PG25 sets the pin code
+SR,Z 		PG25 erases any stored addresses 
+SR,I		     writes the last address observed 		     		using the inquiry command
+SY,<hex value>	PG27 transmit power
+
+
+
+
+
+
+
+//Connecting to the computer from the module
+6. Try the following commands:
+• $$$ to enter command mode
+• SO,% to enable status message to see connect/disconnect conditions
+• R,1 to reboot
+• $$$ to re-enter command mode
+• + to enable local echo
+• C,<MAC address> to attempt a connection with remote device
+Characters you type in terminal B are sent over Bluetooth to the host PC and
+appear in terminal A. Any characters entered in terminal A are transmitted to terminal
+B.
+7. To kill the connection, type the k,1 <cr> command in terminal B.
+
+
+
